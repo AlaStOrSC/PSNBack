@@ -53,6 +53,10 @@ const login = async ({ email, password }) => {
   };
 };
 
+const getUsers = async () => {
+  return await User.find().select('-password');
+};
+
 const getUserProfile = async (userId) => {
   const user = await User.findById(userId).select('-password');
   if (!user) {

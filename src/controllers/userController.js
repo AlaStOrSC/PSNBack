@@ -3,8 +3,12 @@ const Friendship = require('../models/Friendship');
 
 const register = async (req, res) => {
   try {
-    await userService.register(req.body);
-    res.status(201).json({ message: 'Usuario registrado exitosamente' });
+    const { user, token } = await userService.register(req.body);
+    res.status(201).json({
+      message: 'Usuario registrado exitosamente',
+      user,
+      token
+    });
   } catch (error) {
     res.status(error.message.includes('ya existe') ? 400 : 500).json({
       message: 'Error al registrar el usuario',
@@ -15,7 +19,7 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const token = await userService.login(req.body);
+    const { user, token } = await userService.login(req.body);
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -23,9 +27,11 @@ const login = async (req, res) => {
       maxAge: 3600000,
       path: '/',
     });
-
-    res.status(200).json({ message: 'Inicio de sesión exitoso', token });
-    
+    res.status(200).json({
+      message: 'Inicio de sesión exitoso',
+      user,
+      token
+    });
   } catch (error) {
     res.status(error.message.includes('incorrectos') ? 401 : 500).json({
       message: 'Error al iniciar sesión',

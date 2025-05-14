@@ -14,7 +14,18 @@ const register = async ({ username, email, password, phone, city }) => {
   await user.save();
   await sendWelcomeEmail(username, email);
 
-  return user;
+  const token = jwt.sign({ userId: user._id, role: user.role }, jwtSecret, { expiresIn: '1h' });
+
+  return {
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      phone: user.phone,
+      city: user.city
+    },
+    token
+  };
 };
 
 const login = async ({ email, password }) => {
@@ -29,11 +40,17 @@ const login = async ({ email, password }) => {
   }
 
   const token = jwt.sign({ userId: user._id, role: user.role }, jwtSecret, { expiresIn: '1h' });
-  return token;
-};
 
-const getUsers = async () => {
-  return await User.find().select('-password');
+  return {
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      phone: user.phone,
+      city: user.city
+    },
+    token
+  };
 };
 
 const getUserProfile = async (userId) => {

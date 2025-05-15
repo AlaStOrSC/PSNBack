@@ -4,6 +4,13 @@ const Friendship = require('../models/Friendship');
 const register = async (req, res) => {
   try {
     const { user, token } = await userService.register(req.body);
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production' ? true : false,
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      maxAge: 3600000,
+      path: '/',
+    });
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
       user,
@@ -22,7 +29,7 @@ const login = async (req, res) => {
     const { user, token } = await userService.login(req.body);
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production' ? true : false,
       sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
       maxAge: 3600000,
       path: '/',

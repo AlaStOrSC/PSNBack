@@ -41,6 +41,13 @@ const UPLOADS_BASE_PATH = process.env.NODE_ENV === 'production'
   : path.join(__dirname, 'Uploads');
 app.use('/uploads', express.static(UPLOADS_BASE_PATH));
 
+app.get('/api/env', (req, res) => {
+  res.json({
+    nodeEnv: process.env.NODE_ENV,
+    apiKey: process.env.OPENWEATHERMAP_API_KEY,
+  });
+});
+
 app.use('/api/users', userRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/messages', messageRoutes);

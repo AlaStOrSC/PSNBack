@@ -36,7 +36,6 @@ const createMatch = async (userId, { player2Username, player3Username, player4Us
   });
   await match.save();
 
-  // Poblar los campos player1, player2, player3, player4 con username
   await match.populate('player1', 'username');
   await match.populate('player2', 'username');
   await match.populate('player3', 'username');
@@ -68,6 +67,29 @@ const updateMatch = async (userId, matchId, updates) => {
   const match = await Match.findOne({ _id: matchId, userId });
   if (!match) {
     throw new Error('Partido no encontrado o no autorizado');
+  }
+
+  // Convertir usernames a ObjectId si se proporcionan
+  if (updates.player2) {
+    const player2 = await User.findOne({ username: updates.player2 });
+    if (!player2) {
+      throw new Error(`El usuario ${updates.player2} no existe`);
+    }
+    updates.player2 = player2._id;
+  }
+  if (updates.player3) {
+    const player3 = await User.findOne({ username: updates.player3 });
+    if (!player3) {
+      throw new Error(`El usuario ${updates.player3} no existe`);
+    }
+    updates.player3 = player3._id;
+  }
+  if (updates.player4) {
+    const player4 = await User.findOne({ username: updates.player4 });
+    if (!player4) {
+      throw new Error(`El usuario ${updates.player4} no existe`);
+    }
+    updates.player4 = player4._id;
   }
 
   if (updates.isSaved && updates.results) {

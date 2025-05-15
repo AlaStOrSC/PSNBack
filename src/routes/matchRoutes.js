@@ -7,7 +7,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 router.post('/', authMiddleware(), createMatch);
 router.get('/', authMiddleware(), getMatches);
 router.delete('/:id', authMiddleware(), deleteMatch);
-router.put('/:id', authMiddleware('admin'),updateMatch);
+router.put('/:id', authMiddleware(),updateMatch);
 router.put('/savematches/:id', authMiddleware(),saveMatch);
 
 module.exports = router;

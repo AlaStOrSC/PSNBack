@@ -30,6 +30,7 @@ router.post('/logout', authMiddleware(), logout);
 
 router.get('/', authMiddleware(), getUsers);
 router.get('/profile', authMiddleware(), getUserProfile);
+router.put('/profile', authMiddleware(), getUserProfile);
 
 router.post(
   '/friends/request/:recipientId',

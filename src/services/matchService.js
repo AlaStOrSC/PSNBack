@@ -1,7 +1,8 @@
 const Match = require('../models/Match');
 const User = require('../models/User');
+const { getWeather } = require('./weatherService');
 
-const createMatch = async (userId, { player2Username, player3Username, player4Username, date, time, city, weather, rainWarning }) => {
+const createMatch = async (userId, { player2Username, player3Username, player4Username, date, time, city }) => {
   const player1 = await User.findById(userId);
   if (!player1) {
     throw new Error('Usuario autenticado no encontrado');
@@ -21,6 +22,8 @@ const createMatch = async (userId, { player2Username, player3Username, player4Us
   if (!player4) {
     throw new Error(`El usuario ${player4Username} no existe`);
   }
+
+  const { weather, rainWarning } = await getWeather(city, date, time);
 
   const match = new Match({
     userId,
@@ -69,7 +72,6 @@ const updateMatch = async (userId, matchId, updates) => {
     throw new Error('Partido no encontrado o no autorizado');
   }
 
-  // Convertir usernames a ObjectId si se proporcionan
   if (updates.player2) {
     const player2 = await User.findOne({ username: updates.player2 });
     if (!player2) {
@@ -90,6 +92,16 @@ const updateMatch = async (userId, matchId, updates) => {
       throw new Error(`El usuario ${updates.player4} no existe`);
     }
     updates.player4 = player4._id;
+  }
+
+  if (updates.date || updates.time || updates.city) {
+    const { weather, rainWarning } = await getWeather(
+      updates.city || match.city,
+      updates.date || match.date.split('T')[0],
+      updates.time || match.time
+    );
+    updates.weather = weather;
+    updates.rainWarning = rainWarning;
   }
 
   if (updates.isSaved && updates.results) {

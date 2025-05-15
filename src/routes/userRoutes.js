@@ -13,6 +13,7 @@ const {
   getPendingRequests,
   logout,
   getPendingRequestsCount,
+  updateProfile,
 } = require('../controllers/userController');
 const {
   validateResult,
@@ -30,7 +31,7 @@ router.post('/logout', authMiddleware(), logout);
 
 router.get('/', authMiddleware(), getUsers);
 router.get('/profile', authMiddleware(), getUserProfile);
-router.put('/profile', authMiddleware(), getUserProfile);
+router.put('/profile', authMiddleware(), updateProfile);
 
 router.post(
   '/friends/request/:recipientId',

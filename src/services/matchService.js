@@ -114,7 +114,15 @@ const saveMatch = async (userId, matchId, updates) => {
 };
 
 const deleteMatch = async (userId, matchId) => {
-  const match = await Match.findOneAndDelete({ _id: matchId, userId });
+  const match = await Match.findOneAndDelete({
+    _id: matchId,
+    $or: [
+      { player1: userId },
+      { player2: userId },
+      { player3: userId },
+      { player4: userId },
+    ],
+  });
   if (!match) {
     throw new Error('Partido no encontrado o no autorizado');
   }

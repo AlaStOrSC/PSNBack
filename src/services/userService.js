@@ -22,7 +22,9 @@ const register = async ({ username, email, password, phone, city }) => {
       username: user.username,
       email: user.email,
       phone: user.phone,
-      city: user.city
+      city: user.city,
+      profilePicture: user.profilePicture,
+      role: user.role,
     },
     token
   };
@@ -47,14 +49,25 @@ const login = async ({ email, password }) => {
       username: user.username,
       email: user.email,
       phone: user.phone,
-      city: user.city
+      city: user.city,
+      profilePicture: user.profilePicture,
+      role: user.role,
     },
     token
   };
 };
 
 const getUsers = async () => {
-  return await User.find().select('-password');
+  const users = await User.find().select('-password');
+  return users.map(user => ({
+    id: user._id,
+    username: user.username,
+    email: user.email,
+    phone: user.phone,
+    city: user.city,
+    profilePicture: user.profilePicture,
+    role: user.role,
+  }));
 };
 
 const getUserProfile = async (userId) => {
@@ -62,7 +75,48 @@ const getUserProfile = async (userId) => {
   if (!user) {
     throw new Error('Usuario no encontrado');
   }
-  return user;
+  return {
+    id: user._id,
+    username: user.username,
+    email: user.email,
+    phone: user.phone,
+    city: user.city,
+    profilePicture: user.profilePicture,
+    role: user.role,
+  };
+};
+
+const updateProfile = async (userId, updates) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('Usuario no encontrado');
+  }
+
+  const allowedUpdates = ['phone', 'email', 'city', 'profilePicture'];
+  const updateFields = Object.keys(updates).filter((key) => allowedUpdates.includes(key));
+
+  if (updates.email && updates.email !== user.email) {
+    const existingUser = await User.findOne({ email: updates.email });
+    if (existingUser) {
+      throw new Error('El email ya está en uso por otro usuario');
+    }
+  }
+
+  updateFields.forEach((field) => {
+    user[field] = updates[field];
+  });
+
+  await user.save();
+
+  return {
+    id: user._id,
+    username: user.username,
+    email: user.email,
+    phone: user.phone,
+    city: user.city,
+    profilePicture: user.profilePicture,
+    role: user.role,
+  };
 };
 
 const sendFriendRequest = async (userId, recipientId) => {
@@ -163,7 +217,7 @@ const getFriends = async (userId) => {
       ? friendship.recipient
       : friendship.requester;
     return {
-      _id: friend._id,
+      id: friend._id,
       username: friend.username,
       email: friend.email,
       profilePicture: friend.profilePicture,
@@ -208,6 +262,7 @@ module.exports = {
   login,
   getUsers,
   getUserProfile,
+  updateProfile,
   sendFriendRequest,
   acceptFriendRequest,
   rejectFriendRequest,

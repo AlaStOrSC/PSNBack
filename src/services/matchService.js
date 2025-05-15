@@ -36,6 +36,12 @@ const createMatch = async (userId, { player2Username, player3Username, player4Us
   });
   await match.save();
 
+  // Poblar los campos player1, player2, player3, player4 con username
+  await match.populate('player1', 'username');
+  await match.populate('player2', 'username');
+  await match.populate('player3', 'username');
+  await match.populate('player4', 'username');
+
   return match;
 };
 

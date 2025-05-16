@@ -25,6 +25,11 @@ const register = async ({ username, email, password, phone, city }) => {
       city: user.city,
       profilePicture: user.profilePicture,
       role: user.role,
+      score: user.score,
+      matchesWon: user.matchesWon,
+      matchesLost: user.matchesLost,
+      matchesDrawn: user.matchesDrawn,
+      totalMatches: user.totalMatches,
     },
     token
   };
@@ -52,6 +57,11 @@ const login = async ({ email, password }) => {
       city: user.city,
       profilePicture: user.profilePicture,
       role: user.role,
+      score: user.score,
+      matchesWon: user.matchesWon,
+      matchesLost: user.matchesLost,
+      matchesDrawn: user.matchesDrawn,
+      totalMatches: user.totalMatches,
     },
     token
   };
@@ -67,6 +77,11 @@ const getUsers = async () => {
     city: user.city,
     profilePicture: user.profilePicture,
     role: user.role,
+    score: user.score,
+    matchesWon: user.matchesWon,
+    matchesLost: user.matchesLost,
+    matchesDrawn: user.matchesDrawn,
+    totalMatches: user.totalMatches,
   }));
 };
 
@@ -83,6 +98,11 @@ const getUserProfile = async (userId) => {
     city: user.city,
     profilePicture: user.profilePicture,
     role: user.role,
+    score: user.score,
+    matchesWon: user.matchesWon,
+    matchesLost: user.matchesLost,
+    matchesDrawn: user.matchesDrawn,
+    totalMatches: user.totalMatches,
   };
 };
 

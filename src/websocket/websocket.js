@@ -28,7 +28,7 @@ const initializeWebSocket = (server) => {
     }
 
     try {
-      const decoded = jwt.verify(token, jwtSecret, { ignoreExpiration: true });
+      const decoded = jwt.verify(token, jwtSecret);
       console.log('Token decodificado:', decoded);
       const userId = decoded.userId;
 
@@ -99,6 +99,9 @@ const initializeWebSocket = (server) => {
             }));
             console.log(`Notificado a ${userId} que los mensajes fueron leídos`);
           }
+        } else if (data.type === 'ping') {
+          ws.send(JSON.stringify({ type: 'pong' }));
+          console.log(`Respondiendo con pong al cliente ${ws.userId}`);
         } else {
           ws.send(JSON.stringify({
             type: 'error',

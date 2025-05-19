@@ -64,13 +64,6 @@ router.delete(
 router.get('/friends', authMiddleware(), getFriends);
 router.get('/friends/requests', authMiddleware(), getPendingRequests);
 router.get('/friends/requests/count', authMiddleware(), getPendingRequestsCount);
-router.get('/server-time', (req, res) => {
-  const serverTime = new Date();
-  res.json({
-    serverTime: serverTime.toISOString(),
-    timestamp: serverTime.getTime(),
-  });
-});
 
 
 module.exports = router;

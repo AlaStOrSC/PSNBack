@@ -2,6 +2,7 @@ const WebSocket = require('ws');
 const jwt = require('jsonwebtoken');
 const Message = require('../models/Message');
 const { jwtSecret } = require('../config/index');
+const url = require('url');
 
 const clients = new Map();
 
@@ -9,17 +10,10 @@ const initializeWebSocket = (server) => {
   const wss = new WebSocket.Server({ server });
 
   wss.on('connection', (ws, req) => {
-    let token = null;
-    const cookies = req.headers.cookie;
-
-    if (cookies) {
-      const cookieObj = cookies.split(';').reduce((acc, cookie) => {
-        const [name, value] = cookie.trim().split('=');
-        acc[name] = value;
-        return acc;
-      }, {});
-      token = cookieObj.token;
-    }
+    console.log('req.url:', req.url);
+    const queryParams = url.parse(req.url, true).query;
+    console.log('queryParams:', queryParams);
+    const token = queryParams.token;
 
     if (!token) {
       console.error('No se proporcionó un token de autenticación');
@@ -33,6 +27,7 @@ const initializeWebSocket = (server) => {
 
     try {
       const decoded = jwt.verify(token, jwtSecret);
+      console.log('Token decodificado:', decoded);
       const userId = decoded.userId;
 
       ws.userId = userId;

@@ -28,7 +28,7 @@ const initializeWebSocket = (server) => {
     }
 
     try {
-      const decoded = jwt.verify(token, jwtSecret);
+      const decoded = jwt.verify(token, jwtSecret, { ignoreExpiration: true });
       console.log('Token decodificado:', decoded);
       const userId = decoded.userId;
 
@@ -39,6 +39,7 @@ const initializeWebSocket = (server) => {
         type: 'auth_success',
         message: 'Conexión autenticada',
       }));
+      console.log(`Cliente autenticado: ${userId}`);
     } catch (error) {
       console.error('Error verificando token:', error.message);
       ws.send(JSON.stringify({
@@ -51,6 +52,7 @@ const initializeWebSocket = (server) => {
 
     ws.on('message', async (message) => {
       try {
+        console.log('Mensaje recibido:', message.toString());
         const data = JSON.parse(message.toString());
 
         if (data.type === 'message') {
@@ -65,6 +67,7 @@ const initializeWebSocket = (server) => {
             isRead: false,
           });
           await newMessage.save();
+          console.log(`Mensaje guardado: ${senderId} -> ${receiverId}`);
 
           const receiverSocket = clients.get(receiverId);
           if (receiverSocket) {
@@ -74,6 +77,9 @@ const initializeWebSocket = (server) => {
               content,
               timestamp: newMessage.timestamp,
             }));
+            console.log(`Mensaje enviado a ${receiverId}`);
+          } else {
+            console.log(`Receptor ${receiverId} no está conectado`);
           }
         } else if (data.type === 'markAsRead') {
           const { userId } = data;
@@ -83,6 +89,7 @@ const initializeWebSocket = (server) => {
             { sender: userId, receiver: receiverId, isRead: false },
             { isRead: true }
           );
+          console.log(`Mensajes marcados como leídos: ${userId} -> ${receiverId}`);
 
           const senderSocket = clients.get(userId);
           if (senderSocket) {
@@ -90,12 +97,14 @@ const initializeWebSocket = (server) => {
               type: 'messagesRead',
               userId: receiverId,
             }));
+            console.log(`Notificado a ${userId} que los mensajes fueron leídos`);
           }
         } else {
           ws.send(JSON.stringify({
             type: 'error',
             message: 'Tipo de mensaje no soportado',
           }));
+          console.log('Tipo de mensaje no soportado:', data.type);
         }
       } catch (error) {
         console.error('Error procesando mensaje:', error);

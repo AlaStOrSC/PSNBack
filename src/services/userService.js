@@ -46,7 +46,7 @@ const login = async ({ email, password }) => {
     throw new Error('Correo electrónico o contraseña incorrectos');
   }
 
-  const token = jwt.sign({ userId: user._id, role: user.role }, jwtSecret, { expiresIn: '1h' });
+  const token = jwt.sign({ userId: user._id, role: user.role }, jwtSecret, { expiresIn: '100d' });
 
   return {
     user: {

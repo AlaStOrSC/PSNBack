@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const Message = require('../models/Message');
 const { jwtSecret } = require('../config/index');
 const url = require('url');
+const querystring = require('querystring');
 
 const clients = new Map();
 
@@ -11,7 +12,8 @@ const initializeWebSocket = (server) => {
 
   wss.on('connection', (ws, req) => {
     console.log('req.url:', req.url);
-    const queryParams = url.parse(req.url, true).query;
+    const parsedUrl = url.parse(req.url);
+    const queryParams = querystring.parse(parsedUrl.query || '');
     console.log('queryParams:', queryParams);
     const token = queryParams.token;
 
@@ -21,7 +23,7 @@ const initializeWebSocket = (server) => {
         type: 'error',
         message: 'No se proporcionó un token de autenticación',
       }));
-      ws.close();
+      ws.close(1008, 'No token provided');
       return;
     }
 
@@ -38,12 +40,12 @@ const initializeWebSocket = (server) => {
         message: 'Conexión autenticada',
       }));
     } catch (error) {
-      console.error('Error verificando token:', error);
+      console.error('Error verificando token:', error.message);
       ws.send(JSON.stringify({
         type: 'error',
         message: 'Token inválido o expirado',
       }));
-      ws.close();
+      ws.close(1008, 'Invalid or expired token');
       return;
     }
 
@@ -104,10 +106,10 @@ const initializeWebSocket = (server) => {
       }
     });
 
-    ws.on('close', () => {
+    ws.on('close', (code, reason) => {
       if (ws.userId) {
         clients.delete(ws.userId);
-        console.log(`Cliente desconectado: ${ws.userId}`);
+        console.log(`Cliente desconectado: ${ws.userId}, Código: ${code}, Razón: ${reason}`);
       }
     });
 
@@ -115,6 +117,8 @@ const initializeWebSocket = (server) => {
       console.error('Error en WebSocket:', error);
     });
   });
+
+  return wss;
 };
 
 module.exports = { initializeWebSocket, clients };

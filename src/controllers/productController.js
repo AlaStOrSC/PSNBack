@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 const getProducts = async (req, res) => {
   try {
-    const { page, limit, minRating, minPrice, maxPrice, category, sellerId } = req.query;
+    const { page, limit, minRating, minPrice, maxPrice, category, sellerUsername } = req.query;
     const result = await productService.getProducts({
       page: parseInt(page) || 1,
       limit: parseInt(limit) || 10,
@@ -11,7 +11,7 @@ const getProducts = async (req, res) => {
       minPrice: minPrice ? parseFloat(minPrice) : undefined,
       maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
       category,
-      sellerId,
+      sellerUsername,
     });
     res.status(200).json(result);
   } catch (error) {

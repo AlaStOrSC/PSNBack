@@ -2,22 +2,37 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const cloudinary = require('../config/cloudinary');
 
-const getProducts = async ({ page = 1, limit = 10, minRating, minPrice, maxPrice, category, sellerId }) => {
+const getProducts = async ({ page = 1, limit = 10, minRating, minPrice, maxPrice, category, sellerUsername }) => {
   const query = {};
 
-  if (minRating) {
-    query.averageRating = { $gte: minRating };
-  }
   if (minPrice || maxPrice) {
     query.price = {};
-    if (minPrice) query.price.$gte = minPrice;
-    if (maxPrice) query.price.$lte = maxPrice;
+    if (minPrice) query.price.$gte = parseFloat(minPrice);
+    if (maxPrice) query.price.$lte = parseFloat(maxPrice);
   }
   if (category) {
     query.category = category;
   }
-  if (sellerId) {
-    query.seller = sellerId;
+
+  let sellerIds = [];
+  if (sellerUsername) {
+    const sellers = await User.find({
+      username: { $regex: sellerUsername, $options: 'i' },
+    }).select('_id');
+    sellerIds = sellers.map(seller => seller._id);
+    query.seller = { $in: sellerIds };
+  }
+
+  if (minRating) {
+    const sellers = await User.find({
+      averageRating: { $gte: parseFloat(minRating) },
+    }).select('_id');
+    const ratingSellerIds = sellers.map(seller => seller._id);
+    if (sellerUsername) {
+      query.seller = { $in: sellerIds.filter(id => ratingSellerIds.includes(id)) };
+    } else {
+      query.seller = { $in: ratingSellerIds };
+    }
   }
 
   const products = await Product.find(query)

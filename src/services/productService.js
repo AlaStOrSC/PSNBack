@@ -37,7 +37,6 @@ const getProducts = async ({ page = 1, limit = 10, minRating, minPrice, maxPrice
 };
 
 const createProduct = async ({ name, image, price, description, category, sellerId }) => {
-  // Subir la imagen a Cloudinary
   const uploadResponse = await new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       { resource_type: 'image' },
@@ -60,7 +59,6 @@ const createProduct = async ({ name, image, price, description, category, seller
 
   await product.save();
 
-  // Añadir el producto al array de productos del usuario
   await User.findByIdAndUpdate(sellerId, {
     $push: { products: product._id },
   });
@@ -83,14 +81,12 @@ const rateProduct = async (productId, userId, rating, comment) => {
     throw new Error('Producto no encontrado');
   }
 
-  // Añadir la valoración
   product.ratings.push({
     user: userId,
     rating,
     comment,
   });
 
-  // Recalcular el promedio de valoraciones
   if (product.ratings.length > 0) {
     const totalRating = product.ratings.reduce((sum, r) => sum + r.rating, 0);
     product.averageRating = totalRating / product.ratings.length;
@@ -98,10 +94,8 @@ const rateProduct = async (productId, userId, rating, comment) => {
 
   await product.save();
 
-  // Eliminar el producto después de la valoración
   await Product.findByIdAndDelete(productId);
 
-  // Quitar el producto del array de productos del vendedor
   await User.findByIdAndUpdate(product.seller, {
     $pull: { products: productId },
   });

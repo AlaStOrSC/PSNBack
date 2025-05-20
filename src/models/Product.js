@@ -76,7 +76,6 @@ const productSchema = new mongoose.Schema({
 
 productSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
-  // Calcular el promedio de valoraciones
   if (this.ratings && this.ratings.length > 0) {
     const totalRating = this.ratings.reduce((sum, r) => sum + r.rating, 0);
     this.averageRating = totalRating / this.ratings.length;

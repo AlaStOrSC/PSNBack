@@ -1,4 +1,5 @@
 const productService = require('../services/productService');
+const mongoose = require('mongoose');
 
 const getProducts = async (req, res) => {
   try {
@@ -44,6 +45,10 @@ const purchaseProduct = async (req, res) => {
     const { productId } = req.params;
     const buyerId = req.user.userId;
 
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: 'ID de producto inválido' });
+    }
+
     const product = await productService.purchaseProduct(productId, buyerId);
 
     res.status(200).json({ message: 'Compra iniciada con éxito', product });
@@ -57,6 +62,14 @@ const rateProduct = async (req, res) => {
     const { productId } = req.params;
     const userId = req.user.userId;
     const { rating, comment } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: 'ID de producto invalido' });
+    }
+
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'La valoración debe estar entre 1 y 5' });
+    }
 
     const product = await productService.rateProduct(productId, userId, rating, comment);
 

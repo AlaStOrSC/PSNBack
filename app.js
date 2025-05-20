@@ -10,7 +10,7 @@ const newsRoutes = require('./src/routes/newsRoutes');
 const errorHandler = require('./src/middlewares/errorMiddleware');
 const notFoundHandler = require('./src/middlewares/notFoundHandler');
 const adminRoutes = require('./src/routes/adminRoutes');
-const productRoutes = require('./routes/productRoutes');
+const productRoutes = require('./src/routes/productRoutes');
 
 const app = express();
 

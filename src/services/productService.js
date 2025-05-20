@@ -24,7 +24,7 @@ const getProducts = async ({ page = 1, limit = 10, minRating, minPrice, maxPrice
     .populate('seller', 'username averageRating')
     .skip((page - 1) * limit)
     .limit(limit)
-    .sort({ averageRating: -1, createdAt: -1 });
+    .sort({ createdAt: -1 });
 
   const total = await Product.countDocuments(query);
 
@@ -76,27 +76,30 @@ const purchaseProduct = async (productId, buyerId) => {
 };
 
 const rateProduct = async (productId, userId, rating, comment) => {
-  const product = await Product.findById(productId);
+  const product = await Product.findById(productId).populate('seller');
   if (!product) {
     throw new Error('Producto no encontrado');
   }
 
-  product.ratings.push({
+  const seller = await User.findById(product.seller._id);
+  seller.ratings.push({
     user: userId,
     rating,
     comment,
   });
 
-  if (product.ratings.length > 0) {
-    const totalRating = product.ratings.reduce((sum, r) => sum + r.rating, 0);
-    product.averageRating = totalRating / product.ratings.length;
+  if (seller.ratings.length > 0) {
+    const totalRating = seller.ratings.reduce((sum, r) => sum + r.rating, 0);
+    seller.averageRating = totalRating / seller.ratings.length;
+  } else {
+    seller.averageRating = 0;
   }
 
-  await product.save();
+  await seller.save();
 
   await Product.findByIdAndDelete(productId);
 
-  await User.findByIdAndUpdate(product.seller, {
+  await User.findByIdAndUpdate(product.seller._id, {
     $pull: { products: productId },
   });
 

@@ -64,7 +64,7 @@ const rateProduct = async (req, res) => {
     const { rating, comment } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(productId)) {
-      return res.status(400).json({ message: 'ID de producto invalido' });
+      return res.status(400).json({ message: 'ID de producto inválido' });
     }
 
     if (rating < 1 || rating > 5) {

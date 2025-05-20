@@ -24,8 +24,8 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['usuario', 'admin'], 
-    default: 'usuario',  
+    enum: ['usuario', 'admin'],
+    default: 'usuario',
     required: true,
   },
   phone: {
@@ -62,6 +62,34 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  products: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+  }],
+  ratings: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 5,
+    },
+    comment: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'El comentario no puede exceder los 100 caracteres'],
+    },
+  }],
+  averageRating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -77,6 +105,12 @@ userSchema.pre('save', async function (next) {
     this.password = await bcrypt.hash(this.password, 10);
   }
   this.updatedAt = Date.now();
+  if (this.ratings && this.ratings.length > 0) {
+    const totalRating = this.ratings.reduce((sum, r) => sum + r.rating, 0);
+    this.averageRating = totalRating / this.ratings.length;
+  } else {
+    this.averageRating = 0;
+  }
   next();
 });
 

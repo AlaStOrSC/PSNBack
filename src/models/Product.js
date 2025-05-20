@@ -40,30 +40,6 @@ const productSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'El vendedor del producto es obligatorio'],
   },
-  ratings: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    rating: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 5,
-    },
-    comment: {
-      type: String,
-      trim: true,
-      maxlength: [100, 'El comentario no puede exceder los 100 caracteres'],
-    },
-  }],
-  averageRating: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 5,
-  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -76,12 +52,6 @@ const productSchema = new mongoose.Schema({
 
 productSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
-  if (this.ratings && this.ratings.length > 0) {
-    const totalRating = this.ratings.reduce((sum, r) => sum + r.rating, 0);
-    this.averageRating = totalRating / this.ratings.length;
-  } else {
-    this.averageRating = 0;
-  }
   next();
 });
 

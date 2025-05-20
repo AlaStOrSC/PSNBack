@@ -29,13 +29,10 @@ const initializeWebSocket = (server) => {
       // Lista de orígenes permitidos - ajusta según tus necesidades
       const allowedOrigins = [
         // Orígenes de desarrollo
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'http://127.0.0.1:5173',
-        'http://127.0.0.1:5174',
-        // Orígenes de producción
-        'https://tu-app-en-produccion.com',
+    'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  'https://padel-social-frontend.onrender.com',
+  'http://localhost:5173'
         // Permitir cualquier origen (solo para desarrollo/pruebas)
         // '*'
       ];

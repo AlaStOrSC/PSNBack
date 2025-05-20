@@ -9,7 +9,6 @@ const {
 const authMiddleware = require('../middlewares/authMiddleware');
 const multer = require('multer');
 
-// Configuración de multer para la subida de imágenes
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 

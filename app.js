@@ -10,6 +10,7 @@ const newsRoutes = require('./src/routes/newsRoutes');
 const errorHandler = require('./src/middlewares/errorMiddleware');
 const notFoundHandler = require('./src/middlewares/notFoundHandler');
 const adminRoutes = require('./src/routes/adminRoutes');
+const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
@@ -54,6 +55,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/products', productRoutes);
 
 app.use('/api', notFoundHandler);
 app.use(errorHandler);

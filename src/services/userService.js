@@ -106,37 +106,45 @@ const getUserProfile = async (userId) => {
   };
 };
 
-const updateProfile = async (userId, updates) => {
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new Error('Usuario no encontrado');
-  }
-
-  const allowedUpdates = ['phone', 'email', 'city', 'profilePicture'];
-  const updateFields = Object.keys(updates).filter((key) => allowedUpdates.includes(key));
-
-  if (updates.email && updates.email !== user.email) {
-    const existingUser = await User.findOne({ email: updates.email });
-    if (existingUser) {
-      throw new Error('El email ya está en uso por otro usuario');
+const updateProfile = async (userId, { phone, email, city, profilePicture }) => {
+  try {
+    if (email) {
+      const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+      if (existingUser) {
+        throw new Error('The email is already in use');
+      }
     }
+
+    if (profilePicture && (typeof profilePicture !== 'string' || !profilePicture.startsWith('https://res.cloudinary.com'))) {
+      throw new Error('Invalid profile picture URL');
+    }
+
+    const updateData = {};
+    if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
+    if (city !== undefined) updateData.city = city;
+    if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      throw new Error('User not found');
+    }
+
+    return updatedUser;
+  } catch (error) {
+    console.error('Error in userService.updateProfile:', {
+      message: error.message,
+      stack: error.stack,
+      userId,
+      updateData,
+    });
+    throw error;
   }
-
-  updateFields.forEach((field) => {
-    user[field] = updates[field];
-  });
-
-  await user.save();
-
-  return {
-    id: user._id,
-    username: user.username,
-    email: user.email,
-    phone: user.phone,
-    city: user.city,
-    profilePicture: user.profilePicture,
-    role: user.role,
-  };
 };
 
 const sendFriendRequest = async (userId, recipientId) => {

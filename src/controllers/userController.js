@@ -1,5 +1,7 @@
 const userService = require('../services/userService');
 const Friendship = require('../models/Friendship');
+const { validationResult } = require('express-validator');
+
 
 const register = async (req, res) => {
   try {
@@ -161,13 +163,42 @@ const getPendingRequestsCount = async (req, res) => {
 };
 const updateProfile = async (req, res) => {
   try {
-    const user = await userService.updateProfile(req.user.userId, req.body);
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(error.message.includes('no encontrado') ? 404 : error.message.includes('ya está en uso') ? 400 : 500).json({
-      message: 'Error al actualizar el perfil',
-      error: error.message,
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
+    }
+
+    const { phone, email, city, profilePicture } = req.body;
+
+    const updatedUser = await userService.updateProfile(req.user.id, {
+      phone,
+      email,
+      city,
+      profilePicture,
     });
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error in userController.updateProfile:', {
+      message: error.message,
+      stack: error.stack,
+      requestBody: req.body,
+      userId: req.user?.id,
+    });
+    if (error.message === 'The email is already in use') {
+      return res.status(400).json({ error: error.message });
+    }
+    if (error.message === 'User not found') {
+      return res.status(404).json({ error: error.message });
+    }
+    if (error.message === 'Invalid profile picture URL') {
+      return res.status(400).json({ error: error.message });
+    }
+    res.status(500).json({ error: `Error updating profile: ${error.message}` });
   }
 };
 

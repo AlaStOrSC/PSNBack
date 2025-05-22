@@ -161,6 +161,11 @@ const getPendingRequestsCount = async (req, res) => {
 };
 const updateProfile = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     const { phone, email, city, profilePicture } = req.body;
 
     if (email && email !== req.user.email) {
@@ -170,14 +175,15 @@ const updateProfile = async (req, res) => {
       }
     }
 
+    const updateData = {};
+    if (phone) updateData.phone = phone;
+    if (email) updateData.email = email;
+    if (city) updateData.city = city;
+    if (profilePicture) updateData.profilePicture = profilePicture;
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      {
-        phone,
-        email,
-        city,
-        profilePicture,
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -187,8 +193,13 @@ const updateProfile = async (req, res) => {
 
     res.json(updatedUser);
   } catch (error) {
-    console.error('Error updating profile:', error);
-    res.status(500).json({ error: 'Error updating profile' });
+    console.error('Error updating profile:', {
+      message: error.message,
+      stack: error.stack,
+      requestBody: req.body,
+      userId: req.user.id,
+    });
+    res.status(500).json({ error: 'Error updating profile: ' + error.message });
   }
 };
 

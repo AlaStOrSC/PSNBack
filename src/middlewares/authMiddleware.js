@@ -22,7 +22,7 @@ const authMiddleware = (requiredRole) => {
       }
 
       if (!token) {
-        console.log('No token provided');
+        console.log('No se ha proporcionado token');
         return res.status(401).json({ message: 'No se proporcionó un token de autenticación' });
       }
 

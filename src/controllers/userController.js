@@ -1,7 +1,5 @@
 const userService = require('../services/userService');
 const Friendship = require('../models/Friendship');
-const User = require('../models/User');
-const { validationResult } = require('express-validator');
 
 const register = async (req, res) => {
   try {
@@ -163,45 +161,13 @@ const getPendingRequestsCount = async (req, res) => {
 };
 const updateProfile = async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { phone, email, city, profilePicture } = req.body;
-
-    if (email && email !== req.user.email) {
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-        return res.status(400).json({ error: 'The email is already in use' });
-      }
-    }
-
-    const updateData = {};
-    if (phone) updateData.phone = phone;
-    if (email) updateData.email = email;
-    if (city) updateData.city = city;
-    if (profilePicture) updateData.profilePicture = profilePicture;
-
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user.id,
-      updateData,
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedUser) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json(updatedUser);
+    const user = await userService.updateProfile(req.user.userId, req.body);
+    res.status(200).json(user);
   } catch (error) {
-    console.error('Error updating profile:', {
-      message: error.message,
-      stack: error.stack,
-      requestBody: req.body,
-      userId: req.user.id,
+    res.status(error.message.includes('no encontrado') ? 404 : error.message.includes('ya está en uso') ? 400 : 500).json({
+      message: 'Error al actualizar el perfil',
+      error: error.message,
     });
-    res.status(500).json({ error: 'Error updating profile: ' + error.message });
   }
 };
 

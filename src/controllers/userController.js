@@ -161,13 +161,34 @@ const getPendingRequestsCount = async (req, res) => {
 };
 const updateProfile = async (req, res) => {
   try {
-    const user = await userService.updateProfile(req.user.userId, req.body);
-    res.status(200).json(user);
+    const { phone, email, city, profilePicture } = req.body;
+
+    if (email && email !== req.user.email) {
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ error: 'The email is already in use' });
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        phone,
+        email,
+        city,
+        profilePicture,
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json(updatedUser);
   } catch (error) {
-    res.status(error.message.includes('no encontrado') ? 404 : error.message.includes('ya está en uso') ? 400 : 500).json({
-      message: 'Error al actualizar el perfil',
-      error: error.message,
-    });
+    console.error('Error updating profile:', error);
+    res.status(500).json({ error: 'Error updating profile' });
   }
 };
 

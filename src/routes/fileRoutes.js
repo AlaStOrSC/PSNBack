@@ -1,20 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { uploadProfilePicture } = require('../controllers/fileController');
-const authMiddleware = require('../middlewares/authMiddleware');
-const { upload } = require('../services/fileService');
 const multer = require('multer');
+const authMiddleware = require('../middlewares/authMiddleware');
 
-const handleMulterError = (err, req, res, next) => {
-    console.log('Error en multer:', err);
-    if (err instanceof multer.MulterError) {
-      return res.status(400).json({ error: `Error de subida: ${err.message}` });
-    } else if (err) {
-      return res.status(400).json({ error: err.message });
-    }
-    next();
-  };
+const upload = multer({ storage: multer.memoryStorage() });
 
-router.post('/upload-profile-picture', authMiddleware(), upload, handleMulterError, uploadProfilePicture);
+router.post('/upload-profile-picture', authMiddleware(), upload.single('profilePicture'), uploadProfilePicture);
 
 module.exports = router;

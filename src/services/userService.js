@@ -14,7 +14,7 @@ const register = async ({ username, email, password, phone, city }) => {
   await user.save();
   await sendWelcomeEmail(username, email);
 
-  const token = jwt.sign({ userId: user._id, role: user.role }, jwtSecret, { expiresIn: '100d' });
+  const token = jwt.sign({ id: user._id, role: user.role, username: user.username }, jwtSecret, { expiresIn: '100d' });
 
   return {
     user: {
@@ -46,7 +46,7 @@ const login = async ({ email, password }) => {
     throw new Error('Correo electrónico o contraseña incorrectos');
   }
 
-  const token = jwt.sign({ userId: user._id, role: user.role }, jwtSecret, { expiresIn: '100d' });
+  const token = jwt.sign({ id: user._id, role: user.role, username: user.username }, jwtSecret, { expiresIn: '100d' });
 
   return {
     user: {
@@ -108,6 +108,10 @@ const getUserProfile = async (userId) => {
 
 const updateProfile = async (userId, { phone, email, city, profilePicture }) => {
   try {
+    if (!userId) {
+      throw new Error('ID de usuario no proporcionado');
+    }
+
     if (email) {
       const existingUser = await User.findOne({ email, _id: { $ne: userId } });
       if (existingUser) {
@@ -135,7 +139,20 @@ const updateProfile = async (userId, { phone, email, city, profilePicture }) => 
       throw new Error('User not found');
     }
 
-    return updatedUser;
+    return {
+      id: updatedUser._id,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      city: updatedUser.city,
+      profilePicture: updatedUser.profilePicture,
+      role: updatedUser.role,
+      score: updatedUser.score,
+      matchesWon: updatedUser.matchesWon,
+      matchesLost: updatedUser.matchesLost,
+      matchesDrawn: updatedUser.matchesDrawn,
+      totalMatches: updatedUser.totalMatches,
+    };
   } catch (error) {
     console.error('Error in userService.updateProfile:', {
       message: error.message,

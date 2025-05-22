@@ -28,17 +28,30 @@ const authMiddleware = (requiredRole) => {
 
       const decoded = jwt.verify(token, jwtSecret);
       console.log('Token decodificado:', decoded);
-      req.user = decoded;
 
-      if (requiredRole && decoded.role !== requiredRole) {
-        console.log('Acceso denegado: rol insuficiente', decoded.role, requiredRole);
+      req.user = {
+        id: decoded.id || decoded._id || decoded.userId,
+        role: decoded.role,
+        username: decoded.username,
+      };
+
+      if (!req.user.id) {
+        console.error('El payload del token no contiene id, _id, ni userId:', decoded);
+        return res.status(401).json({ message: 'El token no contiene un ID de usuario válido' });
+      }
+
+      if (requiredRole && req.user.role !== requiredRole) {
+        console.log('Acceso denegado: rol insuficiente', req.user.role, requiredRole);
         return res.status(403).json({ message: 'Acceso denegado: se requiere rol de administrador' });
       }
 
       next();
     } catch (error) {
-      console.error('Error en authMiddleware:', error.message);
-      res.status(401).json({ message: 'Token inválido o expirado', error: error.message });
+      console.error('Error en authMiddleware:', {
+        message: error.message,
+        token: req.headers.authorization?.split(' ')[1],
+      });
+      return res.status(401).json({ message: 'Token inválido o expirado', error: error.message });
     }
   };
 };

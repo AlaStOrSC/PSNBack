@@ -2,7 +2,6 @@ const userService = require('../services/userService');
 const Friendship = require('../models/Friendship');
 const { validationResult } = require('express-validator');
 
-
 const register = async (req, res) => {
   try {
     const { user, token } = await userService.register(req.body);
@@ -60,7 +59,7 @@ const getUsers = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
   try {
-    const user = await userService.getUserProfile(req.user.userId);
+    const user = await userService.getUserProfile(req.user.id);
     res.json(user);
   } catch (error) {
     res.status(error.message.includes('no encontrado') ? 404 : 500).json({
@@ -72,7 +71,7 @@ const getUserProfile = async (req, res) => {
 
 const sendFriendRequest = async (req, res) => {
   try {
-    await userService.sendFriendRequest(req.user.userId, req.params.recipientId);
+    await userService.sendFriendRequest(req.user.id, req.params.recipientId);
     res.status(200).json({ message: 'Solicitud de amistad enviada exitosamente' });
   } catch (error) {
     res.status(error.message.includes('no encontrado') || error.message.includes('a ti mismo') || error.message.includes('Ya son amigos') || error.message.includes('pendiente') ? 400 : 500).json({
@@ -84,7 +83,7 @@ const sendFriendRequest = async (req, res) => {
 
 const acceptFriendRequest = async (req, res) => {
   try {
-    await userService.acceptFriendRequest(req.user.userId, req.params.requesterId);
+    await userService.acceptFriendRequest(req.user.id, req.params.requesterId);
     res.status(200).json({ message: 'Solicitud de amistad aceptada exitosamente' });
   } catch (error) {
     res.status(error.message.includes('no encontrada') ? 404 : 500).json({
@@ -96,7 +95,7 @@ const acceptFriendRequest = async (req, res) => {
 
 const rejectFriendRequest = async (req, res) => {
   try {
-    await userService.rejectFriendRequest(req.user.userId, req.params.requesterId);
+    await userService.rejectFriendRequest(req.user.id, req.params.requesterId);
     res.status(200).json({ message: 'Solicitud de amistad rechazada exitosamente' });
   } catch (error) {
     res.status(error.message.includes('no encontrada') ? 404 : 500).json({
@@ -108,7 +107,7 @@ const rejectFriendRequest = async (req, res) => {
 
 const removeFriend = async (req, res) => {
   try {
-    await userService.removeFriend(req.user.userId, req.params.friendId);
+    await userService.removeFriend(req.user.id, req.params.friendId);
     res.status(200).json({ message: 'Amigo eliminado exitosamente' });
   } catch (error) {
     res.status(error.message.includes('no encontrada') ? 404 : 500).json({
@@ -120,7 +119,7 @@ const removeFriend = async (req, res) => {
 
 const getFriends = async (req, res) => {
   try {
-    const friends = await userService.getFriends(req.user.userId);
+    const friends = await userService.getFriends(req.user.id);
     res.status(200).json(friends);
   } catch (error) {
     res.status(500).json({ message: 'Error al listar amigos', error: error.message });
@@ -129,7 +128,7 @@ const getFriends = async (req, res) => {
 
 const getPendingRequests = async (req, res) => {
   try {
-    const requests = await userService.getPendingRequests(req.user.userId);
+    const requests = await userService.getPendingRequests(req.user.id);
     res.status(200).json(requests);
   } catch (error) {
     res.status(500).json({ message: 'Error al listar solicitudes pendientes', error: error.message });
@@ -148,19 +147,18 @@ const logout = (req, res) => {
 
 const getPendingRequestsCount = async (req, res) => {
   try {
-    const userId = req.user.userId;
-
+    const userId = req.user.id;
     const pendingCount = await Friendship.countDocuments({
       recipient: userId,
       status: 'pending',
     });
-
     res.status(200).json({ pendingCount });
   } catch (error) {
     console.error('Error al obtener el conteo de solicitudes pendientes:', error);
     res.status(500).json({ message: 'Error al obtener el conteo de solicitudes pendientes', error: error.message });
   }
 };
+
 const updateProfile = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -169,6 +167,7 @@ const updateProfile = async (req, res) => {
     }
 
     if (!req.user || !req.user.id) {
+      console.error('req.user no definido o sin id:', req.user);
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
@@ -187,7 +186,7 @@ const updateProfile = async (req, res) => {
       message: error.message,
       stack: error.stack,
       requestBody: req.body,
-      userId: req.user?.id,
+      user: req.user,
     });
     if (error.message === 'The email is already in use') {
       return res.status(400).json({ error: error.message });

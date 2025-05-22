@@ -1,5 +1,6 @@
 const userService = require('../services/userService');
 const Friendship = require('../models/Friendship');
+const User = require('../models/User');
 const { validationResult } = require('express-validator');
 
 const register = async (req, res) => {

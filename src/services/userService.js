@@ -62,6 +62,7 @@ const login = async ({ email, password }) => {
       matchesLost: user.matchesLost,
       matchesDrawn: user.matchesDrawn,
       totalMatches: user.totalMatches,
+      points: user.points,
     },
     token
   };
@@ -103,6 +104,7 @@ const getUserProfile = async (userId) => {
     matchesLost: user.matchesLost,
     matchesDrawn: user.matchesDrawn,
     totalMatches: user.totalMatches,
+    points: user.points,
   };
 };
 

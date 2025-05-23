@@ -6,7 +6,7 @@ const uploadProfilePicture = async (req, res) => {
       return res.status(400).json({ error: 'No se proporcionó ninguna imagen' });
     }
 
-    const url = await fileService.uploadProfilePicture(req.file, req.user.id);
+    const url = await fileService.uploadProfilePicture(req.file, req.user.userId);
     res.json({ profilePicture: url });
   } catch (error) {
     console.error('Error en el controlador de subida de imagen:', error);

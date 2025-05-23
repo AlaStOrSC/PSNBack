@@ -59,7 +59,7 @@ const getUsers = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
   try {
-    const user = await userService.getUserProfile(req.user.id);
+    const user = await userService.getUserProfile(req.user.userId);
     res.json(user);
   } catch (error) {
     res.status(error.message.includes('no encontrado') ? 404 : 500).json({
@@ -71,7 +71,7 @@ const getUserProfile = async (req, res) => {
 
 const sendFriendRequest = async (req, res) => {
   try {
-    await userService.sendFriendRequest(req.user.id, req.params.recipientId);
+    await userService.sendFriendRequest(req.user.userId, req.params.recipientId);
     res.status(200).json({ message: 'Solicitud de amistad enviada exitosamente' });
   } catch (error) {
     res.status(error.message.includes('no encontrado') || error.message.includes('a ti mismo') || error.message.includes('Ya son amigos') || error.message.includes('pendiente') ? 400 : 500).json({
@@ -83,7 +83,7 @@ const sendFriendRequest = async (req, res) => {
 
 const acceptFriendRequest = async (req, res) => {
   try {
-    await userService.acceptFriendRequest(req.user.id, req.params.requesterId);
+    await userService.acceptFriendRequest(req.user.userId, req.params.requesterId);
     res.status(200).json({ message: 'Solicitud de amistad aceptada exitosamente' });
   } catch (error) {
     res.status(error.message.includes('no encontrada') ? 404 : 500).json({
@@ -95,7 +95,7 @@ const acceptFriendRequest = async (req, res) => {
 
 const rejectFriendRequest = async (req, res) => {
   try {
-    await userService.rejectFriendRequest(req.user.id, req.params.requesterId);
+    await userService.rejectFriendRequest(req.user.userId, req.params.requesterId);
     res.status(200).json({ message: 'Solicitud de amistad rechazada exitosamente' });
   } catch (error) {
     res.status(error.message.includes('no encontrada') ? 404 : 500).json({
@@ -107,7 +107,7 @@ const rejectFriendRequest = async (req, res) => {
 
 const removeFriend = async (req, res) => {
   try {
-    await userService.removeFriend(req.user.id, req.params.friendId);
+    await userService.removeFriend(req.user.userId, req.params.friendId);
     res.status(200).json({ message: 'Amigo eliminado exitosamente' });
   } catch (error) {
     res.status(error.message.includes('no encontrada') ? 404 : 500).json({
@@ -119,7 +119,7 @@ const removeFriend = async (req, res) => {
 
 const getFriends = async (req, res) => {
   try {
-    const friends = await userService.getFriends(req.user.id);
+    const friends = await userService.getFriends(req.user.userId);
     res.status(200).json(friends);
   } catch (error) {
     res.status(500).json({ message: 'Error al listar amigos', error: error.message });
@@ -128,7 +128,7 @@ const getFriends = async (req, res) => {
 
 const getPendingRequests = async (req, res) => {
   try {
-    const requests = await userService.getPendingRequests(req.user.id);
+    const requests = await userService.getPendingRequests(req.user.userId);
     res.status(200).json(requests);
   } catch (error) {
     res.status(500).json({ message: 'Error al listar solicitudes pendientes', error: error.message });
@@ -147,7 +147,7 @@ const logout = (req, res) => {
 
 const getPendingRequestsCount = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const pendingCount = await Friendship.countDocuments({
       recipient: userId,
       status: 'pending',
@@ -166,14 +166,14 @@ const updateProfile = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    if (!req.user || !req.user.id) {
+    if (!req.user || !req.user.userId) {
       console.error('req.user no definido o sin id:', req.user);
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
     const { phone, email, city, profilePicture } = req.body;
 
-    const updatedUser = await userService.updateProfile(req.user.id, {
+    const updatedUser = await userService.updateProfile(req.user.userId, {
       phone,
       email,
       city,

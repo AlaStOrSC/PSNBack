@@ -3,48 +3,64 @@ const User = require('../models/User');
 const { getWeather } = require('./weatherService');
 
 const createMatch = async (userId, { player2Username, player3Username, player4Username, date, time, city }) => {
-  const player1 = await User.findById(userId);
-  if (!player1) {
-    throw new Error('Usuario autenticado no encontrado');
+  try {
+    console.log('Buscando usuario autenticado:', { userId });
+    const player1 = await User.findById(userId);
+    console.log('Resultado de User.findById:', { player1 });
+    if (!player1) {
+      throw new Error('Usuario autenticado no encontrado');
+    }
+
+    console.log('Buscando player2:', { player2Username });
+    const player2 = await User.findOne({ username: player2Username });
+    if (!player2) {
+      throw new Error(`El usuario ${player2Username} no existe`);
+    }
+
+    console.log('Buscando player3:', { player3Username });
+    const player3 = await User.findOne({ username: player3Username });
+    if (!player3) {
+      throw new Error(`El usuario ${player3Username} no existe`);
+    }
+
+    console.log('Buscando player4:', { player4Username });
+    const player4 = await User.findOne({ username: player4Username });
+    if (!player4) {
+      throw new Error(`El usuario ${player4Username} no existe`);
+    }
+
+    console.log('Obteniendo clima para:', { city, date, time });
+    const { weather, rainWarning } = await getWeather(city, date, time);
+
+    const match = new Match({
+      userId,
+      player1: userId,
+      player2: player2._id,
+      player3: player3._id,
+      player4: player4._id,
+      date,
+      time,
+      city,
+      weather,
+      rainWarning,
+    });
+    await match.save();
+
+    await match.populate('player1', 'username');
+    await match.populate('player2', 'username');
+    await match.populate('player3', 'username');
+    await match.populate('player4', 'username');
+
+    return match;
+  } catch (error) {
+    console.error('Error in createMatch:', {
+      message: error.message,
+      stack: error.stack,
+      userId,
+      body: { player2Username, player3Username, player4Username, date, time, city },
+    });
+    throw error;
   }
-
-  const player2 = await User.findOne({ username: player2Username });
-  if (!player2) {
-    throw new Error(`El usuario ${player2Username} no existe`);
-  }
-
-  const player3 = await User.findOne({ username: player3Username });
-  if (!player3) {
-    throw new Error(`El usuario ${player3Username} no existe`);
-  }
-
-  const player4 = await User.findOne({ username: player4Username });
-  if (!player4) {
-    throw new Error(`El usuario ${player4Username} no existe`);
-  }
-
-  const { weather, rainWarning } = await getWeather(city, date, time);
-
-  const match = new Match({
-    userId,
-    player1: userId,
-    player2: player2._id,
-    player3: player3._id,
-    player4: player4._id,
-    date,
-    time,
-    city,
-    weather,
-    rainWarning,
-  });
-  await match.save();
-
-  await match.populate('player1', 'username');
-  await match.populate('player2', 'username');
-  await match.populate('player3', 'username');
-  await match.populate('player4', 'username');
-
-  return match;
 };
 
 const getMatches = async (userId) => {

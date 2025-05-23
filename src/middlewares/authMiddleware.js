@@ -30,7 +30,7 @@ const authMiddleware = (requiredRole) => {
       console.log('Token decodificado:', decoded);
 
       req.user = {
-        id: decoded.id || decoded._id || decoded.userId,
+        userId: decoded.id || decoded._id || decoded.userId,
         role: decoded.role,
         username: decoded.username,
       };

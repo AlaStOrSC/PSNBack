@@ -303,6 +303,62 @@ const getPendingRequests = async (userId) => {
 
   return { received, sent };
 };
+const redeemPoints = async (userId, option, points) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error('Usuario no encontrado');
+  }
+
+  if (user.points < points) {
+    throw new Error('No tienes puntos suficientes');
+  }
+
+  let prize = '';
+  if (option === 'luckyWheel') {
+    const prizes = [
+      'Overgrip',
+      'Pack de bolas',
+      'Toalla',
+      'Gorra',
+      'La próxima vez será',
+      'Cordones',
+      'Protector',
+    ];
+    prize = prizes[Math.floor(Math.random() * prizes.length)];
+  } else if (option === 'customGrip') {
+    prize = 'Grip personalizado';
+  } else if (option === 'coachingSessions') {
+    prize = '2 sesiones de clases personalizadas';
+  } else if (option === 'psnPack') {
+    prize = 'Pack PSN';
+  } else if (option === 'highPerformancePaddle') {
+    prize = 'Pala Alto rendimiento';
+  } else {
+    throw new Error('Opción de canje inválida');
+  }
+
+  user.points -= points;
+  await user.save();
+
+  return {
+    user: {
+      userId: user._id,
+      username: user.username,
+      email: user.email,
+      phone: user.phone,
+      city: user.city,
+      profilePicture: user.profilePicture,
+      role: user.role,
+      score: user.score,
+      matchesWon: user.matchesWon,
+      matchesLost: user.matchesLost,
+      matchesDrawn: user.matchesDrawn,
+      totalMatches: user.totalMatches,
+      points: user.points,
+    },
+    prize,
+  };
+};
 
 module.exports = {
   register,
@@ -316,4 +372,5 @@ module.exports = {
   removeFriend,
   getFriends,
   getPendingRequests,
+  redeemPoints,
 };

@@ -64,6 +64,7 @@ router.delete(
 router.get('/friends', authMiddleware(), getFriends);
 router.get('/friends/requests', authMiddleware(), getPendingRequests);
 router.get('/friends/requests/count', authMiddleware(), getPendingRequestsCount);
+router.post('/redeem-points', authMiddleware(), userController.redeemPoints);
 
 
 module.exports = router;

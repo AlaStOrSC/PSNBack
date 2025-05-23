@@ -200,6 +200,19 @@ const updateProfile = async (req, res) => {
     res.status(500).json({ error: `Error updating profile: ${error.message}` });
   }
 };
+const redeemPoints = async (req, res) => {
+  try {
+    const { option, points } = req.body;
+    const userId = req.user.userId;
+    const result = await userService.redeemPoints(userId, option, points);
+    res.status(200).json({ message: 'Puntos canjeados exitosamente', result });
+  } catch (error) {
+    res.status(error.message.includes('insuficientes') ? 400 : 500).json({
+      message: 'Error al canjear puntos',
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   register,
@@ -215,4 +228,5 @@ module.exports = {
   logout,
   getPendingRequestsCount,
   updateProfile,
+  redeemPoints,
 };

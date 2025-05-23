@@ -14,6 +14,8 @@ const {
   logout,
   getPendingRequestsCount,
   updateProfile,
+  redeemPoints,
+  
 } = require('../controllers/userController');
 const {
   validateResult,
@@ -64,7 +66,7 @@ router.delete(
 router.get('/friends', authMiddleware(), getFriends);
 router.get('/friends/requests', authMiddleware(), getPendingRequests);
 router.get('/friends/requests/count', authMiddleware(), getPendingRequestsCount);
-router.post('/redeem-points', authMiddleware(), userController.redeemPoints);
+router.post('/redeem-points', authMiddleware(), redeemPoints);
 
 
 module.exports = router;

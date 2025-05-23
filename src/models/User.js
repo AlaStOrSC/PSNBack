@@ -98,6 +98,10 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  points: {
+  type: Number,
+  default: 0,
+  },
 });
 
 userSchema.pre('save', async function (next) {

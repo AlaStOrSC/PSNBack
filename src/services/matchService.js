@@ -200,7 +200,7 @@ const calculateScores = async (match, results, currentUserId) => {
         await User.findByIdAndUpdate(
           playerId,
           {
-            $inc: { matchesWon: 1, totalMatches: 1, points: 10 },
+            $inc: { matchesWon: 1, totalMatches: 1 },
             $set: { updatedAt: Date.now() },
           },
           { new: true }
@@ -210,7 +210,7 @@ const calculateScores = async (match, results, currentUserId) => {
         await User.findByIdAndUpdate(
           playerId,
           {
-            $inc: { matchesLost: 1, totalMatches: 1, points: 2 },
+            $inc: { matchesLost: 1, totalMatches: 1 },
             $set: { updatedAt: Date.now() },
           },
           { new: true }
@@ -221,7 +221,7 @@ const calculateScores = async (match, results, currentUserId) => {
         await User.findByIdAndUpdate(
           playerId,
           {
-            $inc: { matchesLost: 1, totalMatches: 1, points: 2 },
+            $inc: { matchesLost: 1, totalMatches: 1 },
             $set: { updatedAt: Date.now() },
           },
           { new: true }
@@ -231,7 +231,7 @@ const calculateScores = async (match, results, currentUserId) => {
         await User.findByIdAndUpdate(
           playerId,
           {
-            $inc: { matchesWon: 1, totalMatches: 1, points: 10 },
+            $inc: { matchesWon: 1, totalMatches: 1 },
             $set: { updatedAt: Date.now() },
           },
           { new: true }
@@ -242,7 +242,7 @@ const calculateScores = async (match, results, currentUserId) => {
         await User.findByIdAndUpdate(
           playerId,
           {
-            $inc: { matchesDrawn: 1, totalMatches: 1, points: 5 },
+            $inc: { matchesDrawn: 1, totalMatches: 1 },
             $set: { updatedAt: Date.now() },
           },
           { new: true }

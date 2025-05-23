@@ -35,7 +35,7 @@ const authMiddleware = (requiredRole) => {
         username: decoded.username,
       };
 
-      if (!req.user.id) {
+      if (!req.user.userId) {
         console.error('El payload del token no contiene id, _id, ni userId:', decoded);
         return res.status(401).json({ message: 'El token no contiene un ID de usuario válido' });
       }

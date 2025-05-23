@@ -5,11 +5,14 @@ const createMatch = async (req, res) => {
     const userId = req.user.userId;
     const match = await matchService.createMatch(userId, req.body);
     res.status(201).json({ message: 'Partido creado exitosamente', match });
-  } catch (error) {
-    res.status(error.message.includes('no existe') || error.message.includes('no encontrado') ? 400 : 500).json({
-      message: 'Error al crear el partido',
-      error: error.message,
+} catch (error) {
+    console.error('Error in createProduct:', {
+      message: error.message,
+      stack: error.stack,
+      userId: req.user?.id,
+      body: req.body,
     });
+    res.status(500).json({ message: 'Error al crear el producto', error: error.message });
   }
 };
 

@@ -14,11 +14,11 @@ const register = async ({ username, email, password, phone, city }) => {
   await user.save();
   await sendWelcomeEmail(username, email);
 
-  const token = jwt.sign({ id: user._id, role: user.role, username: user.username }, jwtSecret, { expiresIn: '100d' });
+  const token = jwt.sign({ userId: user._id, role: user.role, username: user.username }, jwtSecret, { expiresIn: '100d' });
 
   return {
     user: {
-      id: user._id,
+      userId: user._id,
       username: user.username,
       email: user.email,
       phone: user.phone,
@@ -50,7 +50,7 @@ const login = async ({ email, password }) => {
 
   return {
     user: {
-      id: user._id,
+      userId: user._id,
       username: user.username,
       email: user.email,
       phone: user.phone,
@@ -70,7 +70,7 @@ const login = async ({ email, password }) => {
 const getUsers = async () => {
   const users = await User.find().select('-password');
   return users.map(user => ({
-    id: user._id,
+    userId: user._id,
     username: user.username,
     email: user.email,
     phone: user.phone,
@@ -91,7 +91,7 @@ const getUserProfile = async (userId) => {
     throw new Error('Usuario no encontrado');
   }
   return {
-    id: user._id,
+    userId: user._id,
     username: user.username,
     email: user.email,
     phone: user.phone,
@@ -140,7 +140,7 @@ const updateProfile = async (userId, { phone, email, city, profilePicture }) => 
     }
 
     return {
-      id: updatedUser._id,
+      userId: updatedUser._id,
       username: updatedUser.username,
       email: updatedUser.email,
       phone: updatedUser.phone,

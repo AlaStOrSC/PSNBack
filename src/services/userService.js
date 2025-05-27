@@ -110,6 +110,11 @@ const getUserProfile = async (userId) => {
 
 const updateProfile = async (userId, { phone, email, city, profilePicture }) => {
   try {
+
+    if (!User) {
+      throw new Error('User model not available');
+    }
+
     if (!userId) {
       throw new Error('ID de usuario no proporcionado');
     }

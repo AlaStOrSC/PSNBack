@@ -131,6 +131,10 @@ const updateProfile = async (userId, { phone, email, city, profilePicture }) => 
     if (city !== undefined) updateData.city = city;
     if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
 
+    if (Object.keys(updateData).length === 0) {
+      throw new Error('No se proporcionaron datos para actualizar');
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $set: updateData },

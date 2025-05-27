@@ -164,7 +164,7 @@ const updateProfile = async (userId, { phone, email, city, profilePicture }) => 
       message: error.message,
       stack: error.stack,
       userId,
-      updateData,
+      updateData: updateData || 'Not defined',
     });
     throw error;
   }

@@ -190,6 +190,8 @@ const updateMatch = async (userId, matchId, updates) => {
 
 const saveMatch = async (userId, matchId, updates) => {
   try {
+    console.log('Iniciando saveMatch:', { userId, matchId, updates });
+
     const match = await Match.findOne({
       _id: matchId,
       $or: [
@@ -203,24 +205,29 @@ const saveMatch = async (userId, matchId, updates) => {
     if (!match) {
       throw new Error('Partido no encontrado o no autorizado');
     }
+    console.log('Partido encontrado:', match);
 
     if (match.isSaved) {
       throw new Error('Los resultados de este partido ya han sido guardados');
     }
 
-    const matchDateTime = new Date(`${match.date.toISOString().split('T')[0]}T${match.time}`);
+    const matchDateTime = new Date(`${match.date.toISOString().split('T')[0]}T${match.time}:00.000Z`);
     const now = new Date();
-    if (matchDateTime > now) {
+    const nowUTC = new Date(now.toISOString());
+    console.log('Validando fecha:', { matchDateTime, nowUTC });
+    if (matchDateTime > nowUTC) {
       throw new Error('No se pueden guardar los resultados antes de la hora del partido');
     }
 
     const players = [match.player1, match.player2, match.player3, match.player4].filter(player => player);
+    console.log('Jugadores:', players);
     if (players.length < 2) {
       throw new Error('No hay suficientes jugadores para guardar los resultados');
     }
 
     if (updates.results) {
       const { set1, set2, set3 } = updates.results;
+      console.log('Validando resultados:', updates.results);
       if (
         !set1 || typeof set1.left !== 'number' || typeof set1.right !== 'number' ||
         !set2 || typeof set2.left !== 'number' || typeof set2.right !== 'number' ||

@@ -386,4 +386,21 @@ const calculateScores = async (match, results, currentUserId) => {
   }
 };
 
-module.exports = { createMatch, getMatches, updateMatch, saveMatch, deleteMatch, deleteExpiredMatchesWithEmptySlots, joinMatch };
+const getJoinableMatches = async () => {
+  const matches = await Match.find({
+    $or: [
+      { player2: null },
+      { player3: null },
+      { player4: null },
+    ],
+  })
+    .populate('player1', 'username score profilePicture')
+    .populate('player2', 'username score profilePicture')
+    .populate('player3', 'username score profilePicture')
+    .populate('player4', 'username score profilePicture')
+    .sort({ date: -1 });
+
+  return matches;
+};
+
+module.exports = { createMatch, getMatches, updateMatch, saveMatch, deleteMatch, deleteExpiredMatchesWithEmptySlots, joinMatch, getJoinableMatches };

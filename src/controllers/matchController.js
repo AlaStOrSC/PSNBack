@@ -82,4 +82,13 @@ const deleteMatch = async (req, res) => {
   }
 };
 
-module.exports = { createMatch, getMatches, joinMatch, updateMatch, saveMatch, deleteMatch };
+const getJoinableMatches = async (req, res) => {
+  try {
+    const matches = await matchService.getJoinableMatches();
+    res.status(200).json(matches);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al listar partidos con huecos libres', error: error.message });
+  }
+};
+
+module.exports = { createMatch, getMatches, joinMatch, updateMatch, saveMatch, deleteMatch, getJoinableMatches };

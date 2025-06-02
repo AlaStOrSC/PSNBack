@@ -466,32 +466,31 @@ const calculateScores = async (match, results, currentUserId) => {
   }
 };
 
-const getJoinableMatches = async () => {
+const getJoinableMatches = async (userId = null) => {
   try {
-    const allMatches = await Match.find({}).populate('player1', 'username score profilePicture');
-    console.log('All matches in database:', allMatches.map(m => ({
-      _id: m._id,
-      player1: m.player1?._id?.toString(),
-      player2: m.player2?.toString() || null,
-      player3: m.player3?.toString() || null,
-      player4: m.player4?.toString() || null,
-      date: m.date,
-      time: m.time,
-      city: m.city,
-    })));
-
     const matches = await Match.find({
       $or: [
         { player2: null },
         { player3: null },
         { player4: null },
       ],
+      date: { $gte: new Date() },
+      ...(userId && {
+        $and: [
+          { player1: { $ne: userId } },
+          { player2: { $ne: userId } },
+          { player3: { $ne: userId } },
+          { player4: { $ne: userId } },
+        ],
+      }),
     })
-      .populate('player1', 'username score profilePicture')
-      .populate('player2', 'username score profilePicture')
-      .populate('player3', 'username score profilePicture')
-      .populate('player4', 'username score profilePicture')
-      .sort({ date: -1 });
+      .populate([
+        { path: 'player1', select: 'username score profilePicture' },
+        { path: 'player2', select: 'username score profilePicture' },
+        { path: 'player3', select: 'username score profilePicture' },
+        { path: 'player4', select: 'username score profilePicture' },
+      ])
+      .sort({ date: 1 });
 
     console.log('Joinable matches found:', matches.map(m => ({
       _id: m._id,

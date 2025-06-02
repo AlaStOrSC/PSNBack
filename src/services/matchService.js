@@ -82,13 +82,49 @@ const getMatches = async (userId) => {
       { player4: userId },
     ],
   })
-    .populate('player1', 'username')
-    .populate('player2', 'username')
-    .populate('player3', 'username')
-    .populate('player4', 'username')
+    .populate('player1', 'username score profilePicture')
+    .populate('player2', 'username score profilePicture')
+    .populate('player3', 'username score profilePicture')
+    .populate('player4', 'username score profilePicture')
     .sort({ date: -1 });
 
   return matches;
+};
+
+const joinMatch = async (userId, matchId) => {
+  const match = await Match.findById(matchId);
+  if (!match) {
+    throw new Error('Partido no encontrado');
+  }
+
+  const userAlreadyInMatch = [
+    match.player1,
+    match.player2,
+    match.player3,
+    match.player4,
+  ].some(player => player && player.equals(userId));
+  if (userAlreadyInMatch) {
+    throw new Error('Ya estás en este partido');
+  }
+
+  if (!match.player2) {
+    match.player2 = userId;
+  } else if (!match.player3) {
+    match.player3 = userId;
+  } else if (!match.player4) {
+    match.player4 = userId;
+  } else {
+    throw new Error('No hay posiciones libres en este partido');
+  }
+
+  await match.save();
+
+  await match.populate('player1', 'username score profilePicture');
+  await match.populate('player2', 'username score profilePicture');
+  await match.populate('player3', 'username score profilePicture');
+  await match.populate('player4', 'username score profilePicture');
+
+  return match;
 };
 
 const updateMatch = async (userId, matchId, updates) => {
@@ -144,10 +180,10 @@ const updateMatch = async (userId, matchId, updates) => {
   Object.assign(match, { ...updates, updatedAt: Date.now() });
   await match.save();
 
-  await match.populate('player1', 'username');
-  await match.populate('player2', 'username');
-  await match.populate('player3', 'username');
-  await match.populate('player4', 'username');
+  await match.populate('player1', 'username score profilePicture');
+  await match.populate('player2', 'username score profilePicture');
+  await match.populate('player3', 'username score profilePicture');
+  await match.populate('player4', 'username score profilePicture');
 
   return match;
 };
@@ -178,10 +214,10 @@ const saveMatch = async (userId, matchId, updates) => {
   Object.assign(match, { ...updates, updatedAt: Date.now() });
   await match.save();
 
-  await match.populate('player1', 'username');
-  await match.populate('player2', 'username');
-  await match.populate('player3', 'username');
-  await match.populate('player4', 'username');
+  await match.populate('player1', 'username score profilePicture');
+  await match.populate('player2', 'username score profilePicture');
+  await match.populate('player3', 'username score profilePicture');
+  await match.populate('player4', 'username score profilePicture');
 
   return match;
 };
@@ -202,6 +238,29 @@ const deleteMatch = async (userId, matchId) => {
   return match;
 };
 
+const deleteExpiredMatchesWithEmptySlots = async () => {
+  try {
+    const now = new Date();
+    const matches = await Match.find({
+      $or: [
+        { player2: null },
+        { player3: null },
+        { player4: null },
+      ],
+    });
+
+    for (const match of matches) {
+      const matchDateTime = new Date(`${match.date.toISOString().split('T')[0]}T${match.time}`);
+      if (matchDateTime <= now) {
+        await Match.deleteOne({ _id: match._id });
+        console.log(`Partido eliminado automáticamente por huecos vacíos: ${match._id}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error al eliminar partidos con huecos vacíos:', error);
+  }
+};
+
 const calculateScores = async (match, results, currentUserId) => {
   const setsWon = Object.values(results).reduce((won, set) => {
     if (set.left > set.right) return won + 1;
@@ -219,7 +278,7 @@ const calculateScores = async (match, results, currentUserId) => {
   let userTeam = [];
   let rivalTeam = [];
 
-  if (match.player1.equals(currentUserId) || match.player2.equals(currentUserId)) {
+  if (match.player1.equals(currentUserId) || match.player2?.equals(currentUserId)) {
     userTeam = [match.player1, match.player2].filter(player => player);
     rivalTeam = [match.player3, match.player4].filter(player => player);
   } else {
@@ -327,27 +386,4 @@ const calculateScores = async (match, results, currentUserId) => {
   }
 };
 
-const deleteExpiredMatchesWithEmptySlots = async () => {
-  try {
-    const now = new Date();
-    const matches = await Match.find({
-      $or: [
-        { player2: null },
-        { player3: null },
-        { player4: null },
-      ],
-    });
-
-    for (const match of matches) {
-      const matchDateTime = new Date(`${match.date.toISOString().split('T')[0]}T${match.time}`);
-      if (matchDateTime <= now) {
-        await Match.deleteOne({ _id: match._id });
-        console.log(`Partido eliminado automáticamente por huecos vacíos: ${match._id}`);
-      }
-    }
-  } catch (error) {
-    console.error('Error al eliminar partidos con huecos vacíos:', error);
-  }
-};
-
-module.exports = { createMatch, getMatches, updateMatch, saveMatch, deleteMatch, deleteExpiredMatchesWithEmptySlots };
+module.exports = { createMatch, getMatches, updateMatch, saveMatch, deleteMatch, deleteExpiredMatchesWithEmptySlots, joinMatch };

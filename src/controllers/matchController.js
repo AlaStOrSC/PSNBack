@@ -5,14 +5,14 @@ const createMatch = async (req, res) => {
     const userId = req.user.userId;
     const match = await matchService.createMatch(userId, req.body);
     res.status(201).json({ message: 'Partido creado exitosamente', match });
-} catch (error) {
-    console.error('Error in createProduct:', {
+  } catch (error) {
+    console.error('Error in createMatch:', {
       message: error.message,
       stack: error.stack,
       userId: req.user?.id,
       body: req.body,
     });
-    res.status(500).json({ message: 'Error al crear el producto', error: error.message });
+    res.status(500).json({ message: 'Error al crear el partido', error: error.message });
   }
 };
 
@@ -23,6 +23,20 @@ const getMatches = async (req, res) => {
     res.status(200).json(matches);
   } catch (error) {
     res.status(500).json({ message: 'Error al listar los partidos', error: error.message });
+  }
+};
+
+const joinMatch = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { id } = req.params;
+    const match = await matchService.joinMatch(userId, id);
+    res.status(200).json({ message: 'Te has unido al partido exitosamente', match });
+  } catch (error) {
+    res.status(error.message.includes('no encontrado') || error.message.includes('Ya estás en este partido') ? 400 : 500).json({
+      message: 'Error al unirse al partido',
+      error: error.message,
+    });
   }
 };
 
@@ -68,4 +82,4 @@ const deleteMatch = async (req, res) => {
   }
 };
 
-module.exports = { createMatch, getMatches, updateMatch, saveMatch, deleteMatch };
+module.exports = { createMatch, getMatches, joinMatch, updateMatch, saveMatch, deleteMatch };

@@ -388,6 +388,18 @@ const calculateScores = async (match, results, currentUserId) => {
 
 const getJoinableMatches = async () => {
   try {
+    const allMatches = await Match.find({}).populate('player1', 'username score profilePicture');
+    console.log('All matches in database:', allMatches.map(m => ({
+      _id: m._id,
+      player1: m.player1?._id?.toString(),
+      player2: m.player2?.toString() || null,
+      player3: m.player3?.toString() || null,
+      player4: m.player4?.toString() || null,
+      date: m.date,
+      time: m.time,
+      city: m.city,
+    })));
+
     const matches = await Match.find({
       $or: [
         { player2: null },
@@ -404,9 +416,9 @@ const getJoinableMatches = async () => {
     console.log('Joinable matches found:', matches.map(m => ({
       _id: m._id,
       player1: m.player1?._id?.toString(),
-      player2: m.player2?._id?.toString() || null,
-      player3: m.player3?._id?.toString() || null,
-      player4: m.player4?._id?.toString() || null,
+      player2: m.player2?.toString() || null,
+      player3: m.player3?.toString() || null,
+      player4: m.player4?.toString() || null,
       date: m.date,
       time: m.time,
       city: m.city,

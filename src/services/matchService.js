@@ -1,6 +1,8 @@
 const Match = require('../models/Match');
 const User = require('../models/User');
 const { getWeather } = require('./weatherService');
+const { format, parse } = require('date-fns');
+const { zonedTimeToUtc, utcToZonedTime } = require('date-fns-tz');
 
 const createMatch = async (userId, { player2Username, player3Username, player4Username, date, time, city }) => {
   try {
@@ -211,11 +213,12 @@ const saveMatch = async (userId, matchId, updates) => {
       throw new Error('Los resultados de este partido ya han sido guardados');
     }
 
-    const matchDateTime = new Date(`${match.date.toISOString().split('T')[0]}T${match.time}:00.000Z`);
+    const datePart = match.date.toISOString().split('T')[0];
+    const matchDateTimeLocal = parse(`${datePart} ${match.time}`, 'yyyy-MM-dd HH:mm', new Date());
+    const matchDateTimeUTC = zonedTimeToUtc(matchDateTimeLocal, 'Europe/Madrid');
     const now = new Date();
-    const nowUTC = new Date(now.toISOString());
-    console.log('Validando fecha:', { matchDateTime, nowUTC });
-    if (matchDateTime > nowUTC) {
+    console.log('Validando fecha:', { matchDateTimeUTC, now });
+    if (matchDateTimeUTC > now) {
       throw new Error('No se pueden guardar los resultados antes de la hora del partido');
     }
 
@@ -328,7 +331,6 @@ const calculateScores = async (match, results, currentUserId) => {
       { id: match.player4, name: 'player4' },
     ];
 
-    // Determinar los equipos
     if (players[0].id && players[0].id.equals(currentUserId) || players[1].id && players[1].id.equals(currentUserId)) {
       userTeam = [players[0].id, players[1].id].filter(id => id);
       rivalTeam = [players[2].id, players[3].id].filter(id => id);

@@ -189,37 +189,72 @@ const updateMatch = async (userId, matchId, updates) => {
 };
 
 const saveMatch = async (userId, matchId, updates) => {
-  const match = await Match.findOne({
-    _id: matchId,
-    $or: [
-      { player1: userId },
-      { player2: userId },
-      { player3: userId },
-      { player4: userId },
-    ],
-  });
+  try {
+    const match = await Match.findOne({
+      _id: matchId,
+      $or: [
+        { player1: userId },
+        { player2: userId },
+        { player3: userId },
+        { player4: userId },
+      ],
+    });
 
-  if (!match) {
-    throw new Error('Partido no encontrado o no autorizado');
+    if (!match) {
+      throw new Error('Partido no encontrado o no autorizado');
+    }
+
+    if (match.isSaved) {
+      throw new Error('Los resultados de este partido ya han sido guardados');
+    }
+
+    const matchDateTime = new Date(`${match.date.toISOString().split('T')[0]}T${match.time}`);
+    const now = new Date();
+    if (matchDateTime > now) {
+      throw new Error('No se pueden guardar los resultados antes de la hora del partido');
+    }
+
+    const players = [match.player1, match.player2, match.player3, match.player4].filter(player => player);
+    if (players.length < 2) {
+      throw new Error('No hay suficientes jugadores para guardar los resultados');
+    }
+
+    if (updates.results) {
+      const { set1, set2, set3 } = updates.results;
+      if (
+        !set1 || typeof set1.left !== 'number' || typeof set1.right !== 'number' ||
+        !set2 || typeof set2.left !== 'number' || typeof set2.right !== 'number' ||
+        !set3 || typeof set3.left !== 'number' || typeof set3.right !== 'number'
+      ) {
+        throw new Error('Formato de resultados inválido: los sets deben tener valores numéricos para left y right');
+      }
+    } else {
+      throw new Error('Los resultados son obligatorios para guardar el partido');
+    }
+
+    if (updates.isSaved && updates.results) {
+      await calculateScores(match, updates.results, userId);
+    }
+
+    Object.assign(match, { ...updates, updatedAt: Date.now() });
+    await match.save();
+
+    if (match.player1) await match.populate('player1', 'username score profilePicture');
+    if (match.player2) await match.populate('player2', 'username score profilePicture');
+    if (match.player3) await match.populate('player3', 'username score profilePicture');
+    if (match.player4) await match.populate('player4', 'username score profilePicture');
+
+    return match;
+  } catch (error) {
+    console.error('Error in saveMatch:', {
+      message: error.message,
+      stack: error.stack,
+      userId,
+      matchId,
+      updates,
+    });
+    throw error;
   }
-
-  if (match.isSaved) {
-    throw new Error('Los resultados de este partido ya han sido guardados');
-  }
-
-  if (updates.isSaved && updates.results) {
-    await calculateScores(match, updates.results, userId);
-  }
-
-  Object.assign(match, { ...updates, updatedAt: Date.now() });
-  await match.save();
-
-  await match.populate('player1', 'username score profilePicture');
-  await match.populate('player2', 'username score profilePicture');
-  await match.populate('player3', 'username score profilePicture');
-  await match.populate('player4', 'username score profilePicture');
-
-  return match;
 };
 
 const deleteMatch = async (userId, matchId) => {
@@ -262,127 +297,163 @@ const deleteExpiredMatchesWithEmptySlots = async () => {
 };
 
 const calculateScores = async (match, results, currentUserId) => {
-  const setsWon = Object.values(results).reduce((won, set) => {
-    if (set.left > set.right) return won + 1;
-    if (set.right > set.left) return won - 1;
-    return won;
-  }, 0);
+  try {
+    const setsWon = Object.values(results).reduce((won, set) => {
+      if (set.left > set.right) return won + 1;
+      if (set.right > set.left) return won - 1;
+      return won;
+    }, 0);
 
-  let result;
-  if (setsWon > 0) result = 'won';
-  else if (setsWon < 0) result = 'lost';
-  else result = 'draw';
+    let result;
+    if (setsWon > 0) result = 'won';
+    else if (setsWon < 0) result = 'lost';
+    else result = 'draw';
 
-  match.result = result;
+    match.result = result;
 
-  let userTeam = [];
-  let rivalTeam = [];
+    let userTeam = [];
+    let rivalTeam = [];
 
-  if (match.player1.equals(currentUserId) || match.player2?.equals(currentUserId)) {
-    userTeam = [match.player1, match.player2].filter(player => player);
-    rivalTeam = [match.player3, match.player4].filter(player => player);
-  } else {
-    userTeam = [match.player3, match.player4].filter(player => player);
-    rivalTeam = [match.player1, match.player2].filter(player => player);
-  }
+    const players = [
+      { id: match.player1, name: 'player1' },
+      { id: match.player2, name: 'player2' },
+      { id: match.player3, name: 'player3' },
+      { id: match.player4, name: 'player4' },
+    ];
 
-  if (!match.statsCalculated) {
-    if (result === 'won') {
-      for (const playerId of userTeam) {
-        await User.findByIdAndUpdate(
-          playerId,
-          {
-            $inc: { matchesWon: 1, totalMatches: 1, points: 10 },
-            $set: { updatedAt: Date.now() },
-          },
-          { new: true }
-        );
-      }
-      for (const playerId of rivalTeam) {
-        await User.findByIdAndUpdate(
-          playerId,
-          {
-            $inc: { matchesLost: 1, totalMatches: 1, points: 2 },
-            $set: { updatedAt: Date.now() },
-          },
-          { new: true }
-        );
-      }
-    } else if (result === 'lost') {
-      for (const playerId of userTeam) {
-        await User.findByIdAndUpdate(
-          playerId,
-          {
-            $inc: { matchesLost: 1, totalMatches: 1, points: 2 },
-            $set: { updatedAt: Date.now() },
-          },
-          { new: true }
-        );
-      }
-      for (const playerId of rivalTeam) {
-        await User.findByIdAndUpdate(
-          playerId,
-          {
-            $inc: { matchesWon: 1, totalMatches: 1, points: 10 },
-            $set: { updatedAt: Date.now() },
-          },
-          { new: true }
-        );
-      }
+    // Determinar los equipos
+    if (players[0].id && players[0].id.equals(currentUserId) || players[1].id && players[1].id.equals(currentUserId)) {
+      userTeam = [players[0].id, players[1].id].filter(id => id);
+      rivalTeam = [players[2].id, players[3].id].filter(id => id);
     } else {
-      for (const playerId of [...userTeam, ...rivalTeam]) {
-        await User.findByIdAndUpdate(
-          playerId,
-          {
-            $inc: { matchesDrawn: 1, totalMatches: 1, points: 5 },
-            $set: { updatedAt: Date.now() },
-          },
-          { new: true }
-        );
-      }
+      userTeam = [players[2].id, players[3].id].filter(id => id);
+      rivalTeam = [players[0].id, players[1].id].filter(id => id);
     }
 
-    match.statsCalculated = true;
-  }
+    if (userTeam.length < 1 || rivalTeam.length < 1) {
+      throw new Error('No hay suficientes jugadores en los equipos para calcular los puntajes');
+    }
 
-  const rivalPlayers = await Promise.all(rivalTeam.map(playerId => User.findById(playerId)));
-  const rivalScores = rivalPlayers.map(player => player ? player.score : 0);
-  const rivalAverageScore = rivalScores.length > 0 ? rivalScores.reduce((sum, score) => sum + score, 0) / rivalScores.length : 0;
+    const userTeamPlayers = await Promise.all(userTeam.map(async (playerId) => {
+      const player = await User.findById(playerId);
+      if (!player) {
+        throw new Error(`Usuario no encontrado: ${playerId}`);
+      }
+      return player;
+    }));
 
-  const basePoints = 1.0;
-  let userScoreAdjustment;
-  let rivalScoreAdjustment;
+    const rivalTeamPlayers = await Promise.all(rivalTeam.map(async (playerId) => {
+      const player = await User.findById(playerId);
+      if (!player) {
+        throw new Error(`Usuario no encontrado: ${playerId}`);
+      }
+      return player;
+    }));
 
-  if (result === 'won') {
-    userScoreAdjustment = basePoints * (rivalAverageScore / 10);
-    rivalScoreAdjustment = -basePoints * ((10 - rivalAverageScore) / 10);
-  } else if (result === 'lost') {
-    userScoreAdjustment = -basePoints * ((10 - rivalAverageScore) / 10);
-    rivalScoreAdjustment = basePoints * (rivalAverageScore / 10);
-  } else {
-    return;
-  }
+    if (!match.statsCalculated) {
+      if (result === 'won') {
+        for (const player of userTeamPlayers) {
+          await User.findByIdAndUpdate(
+            player._id,
+            {
+              $inc: { matchesWon: 1, totalMatches: 1, points: 10 },
+              $set: { updatedAt: Date.now() },
+            },
+            { new: true }
+          );
+        }
+        for (const player of rivalTeamPlayers) {
+          await User.findByIdAndUpdate(
+            player._id,
+            {
+              $inc: { matchesLost: 1, totalMatches: 1, points: 2 },
+              $set: { updatedAt: Date.now() },
+            },
+            { new: true }
+          );
+        }
+      } else if (result === 'lost') {
+        for (const player of userTeamPlayers) {
+          await User.findByIdAndUpdate(
+            player._id,
+            {
+              $inc: { matchesLost: 1, totalMatches: 1, points: 2 },
+              $set: { updatedAt: Date.now() },
+            },
+            { new: true }
+          );
+        }
+        for (const player of rivalTeamPlayers) {
+          await User.findByIdAndUpdate(
+            player._id,
+            {
+              $inc: { matchesWon: 1, totalMatches: 1, points: 10 },
+              $set: { updatedAt: Date.now() },
+            },
+            { new: true }
+          );
+        }
+      } else {
+        for (const player of [...userTeamPlayers, ...rivalTeamPlayers]) {
+          await User.findByIdAndUpdate(
+            player._id,
+            {
+              $inc: { matchesDrawn: 1, totalMatches: 1, points: 5 },
+              $set: { updatedAt: Date.now() },
+            },
+            { new: true }
+          );
+        }
+      }
 
-  for (const playerId of userTeam) {
-    const player = await User.findById(playerId);
-    let newScore = player.score + userScoreAdjustment;
+      match.statsCalculated = true;
+    }
 
-    if (newScore > 10) newScore = 10;
-    if (newScore < 0) newScore = 0;
+    const rivalScores = rivalTeamPlayers.map(player => player ? player.score : 0);
+    const rivalAverageScore = rivalScores.length > 0 ? rivalScores.reduce((sum, score) => sum + score, 0) / rivalScores.length : 0;
 
-    player.score = parseFloat(newScore.toFixed(2));
-    await player.save();
-  }
+    const basePoints = 1.0;
+    let userScoreAdjustment;
+    let rivalScoreAdjustment;
 
-  for (const playerId of rivalTeam) {
-    const player = await User.findById(playerId);
-    let newScore = player.score + rivalScoreAdjustment;
+    if (result === 'won') {
+      userScoreAdjustment = basePoints * (rivalAverageScore / 10);
+      rivalScoreAdjustment = -basePoints * ((10 - rivalAverageScore) / 10);
+    } else if (result === 'lost') {
+      userScoreAdjustment = -basePoints * ((10 - rivalAverageScore) / 10);
+      rivalScoreAdjustment = basePoints * (rivalAverageScore / 10);
+    } else {
+      return;
+    }
 
-    if (newScore > 10) newScore = 10;
-    if (newScore < 0) newScore = 0;
+    for (const player of userTeamPlayers) {
+      let newScore = player.score + userScoreAdjustment;
 
-    player.score = parseFloat(newScore.toFixed(2));
-    await player.save();
+      if (newScore > 10) newScore = 10;
+      if (newScore < 0) newScore = 0;
+
+      player.score = parseFloat(newScore.toFixed(2));
+      await player.save();
+    }
+
+    for (const player of rivalTeamPlayers) {
+      let newScore = player.score + rivalScoreAdjustment;
+
+      if (newScore > 10) newScore = 10;
+      if (newScore < 0) newScore = 0;
+
+      player.score = parseFloat(newScore.toFixed(2));
+      await player.save();
+    }
+  } catch (error) {
+    console.error('Error in calculateScores:', {
+      message: error.message,
+      stack: error.stack,
+      matchId: match._id,
+      results,
+      currentUserId,
+    });
+    throw error;
   }
 };
 

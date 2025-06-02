@@ -14,17 +14,20 @@ const matchSchema = new mongoose.Schema({
   player2: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'El jugador 2 es obligatorio'],
+    required: false,
+    default: null,
   },
   player3: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'El jugador 3 es obligatorio'],
+    required: false,
+    default: null,
   },
   player4: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'El jugador 4 es obligatorio'],
+    required: false,
+    default: null,
   },
   date: {
     type: Date,

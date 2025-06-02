@@ -11,22 +11,31 @@ const createMatch = async (userId, { player2Username, player3Username, player4Us
       throw new Error('Usuario autenticado no encontrado');
     }
 
-    console.log('Buscando player2:', { player2Username });
-    const player2 = await User.findOne({ username: player2Username });
-    if (!player2) {
-      throw new Error(`El usuario ${player2Username} no existe`);
+    let player2 = null;
+    if (player2Username) {
+      console.log('Buscando player2:', { player2Username });
+      player2 = await User.findOne({ username: player2Username });
+      if (!player2) {
+        throw new Error(`El usuario ${player2Username} no existe`);
+      }
     }
 
-    console.log('Buscando player3:', { player3Username });
-    const player3 = await User.findOne({ username: player3Username });
-    if (!player3) {
-      throw new Error(`El usuario ${player3Username} no existe`);
+    let player3 = null;
+    if (player3Username) {
+      console.log('Buscando player3:', { player3Username });
+      player3 = await User.findOne({ username: player3Username });
+      if (!player3) {
+        throw new Error(`El usuario ${player3Username} no existe`);
+      }
     }
 
-    console.log('Buscando player4:', { player4Username });
-    const player4 = await User.findOne({ username: player4Username });
-    if (!player4) {
-      throw new Error(`El usuario ${player4Username} no existe`);
+    let player4 = null;
+    if (player4Username) {
+      console.log('Buscando player4:', { player4Username });
+      player4 = await User.findOne({ username: player4Username });
+      if (!player4) {
+        throw new Error(`El usuario ${player4Username} no existe`);
+      }
     }
 
     console.log('Obteniendo clima para:', { city, date, time });
@@ -35,9 +44,9 @@ const createMatch = async (userId, { player2Username, player3Username, player4Us
     const match = new Match({
       userId,
       player1: userId,
-      player2: player2._id,
-      player3: player3._id,
-      player4: player4._id,
+      player2: player2 ? player2._id : null,
+      player3: player3 ? player3._id : null,
+      player4: player4 ? player4._id : null,
       date,
       time,
       city,
@@ -94,20 +103,28 @@ const updateMatch = async (userId, matchId, updates) => {
       throw new Error(`El usuario ${updates.player2} no existe`);
     }
     updates.player2 = player2._id;
+  } else if (updates.player2 === null) {
+    updates.player2 = null;
   }
+
   if (updates.player3) {
     const player3 = await User.findOne({ username: updates.player3 });
     if (!player3) {
       throw new Error(`El usuario ${updates.player3} no existe`);
     }
     updates.player3 = player3._id;
+  } else if (updates.player3 === null) {
+    updates.player3 = null;
   }
+
   if (updates.player4) {
     const player4 = await User.findOne({ username: updates.player4 });
     if (!player4) {
       throw new Error(`El usuario ${updates.player4} no existe`);
     }
     updates.player4 = player4._id;
+  } else if (updates.player4 === null) {
+    updates.player4 = null;
   }
 
   if (updates.date || updates.time || updates.city) {
@@ -203,11 +220,11 @@ const calculateScores = async (match, results, currentUserId) => {
   let rivalTeam = [];
 
   if (match.player1.equals(currentUserId) || match.player2.equals(currentUserId)) {
-    userTeam = [match.player1, match.player2];
-    rivalTeam = [match.player3, match.player4];
+    userTeam = [match.player1, match.player2].filter(player => player);
+    rivalTeam = [match.player3, match.player4].filter(player => player);
   } else {
-    userTeam = [match.player3, match.player4];
-    rivalTeam = [match.player1, match.player2];
+    userTeam = [match.player3, match.player4].filter(player => player);
+    rivalTeam = [match.player1, match.player2].filter(player => player);
   }
 
   if (!match.statsCalculated) {
@@ -269,10 +286,9 @@ const calculateScores = async (match, results, currentUserId) => {
     match.statsCalculated = true;
   }
 
-  const rival1 = await User.findById(rivalTeam[0]);
-  const rival2 = await User.findById(rivalTeam[1]);
-
-  const rivalAverageScore = (rival1.score + rival2.score) / 2;
+  const rivalPlayers = await Promise.all(rivalTeam.map(playerId => User.findById(playerId)));
+  const rivalScores = rivalPlayers.map(player => player ? player.score : 0);
+  const rivalAverageScore = rivalScores.length > 0 ? rivalScores.reduce((sum, score) => sum + score, 0) / rivalScores.length : 0;
 
   const basePoints = 1.0;
   let userScoreAdjustment;
@@ -311,4 +327,27 @@ const calculateScores = async (match, results, currentUserId) => {
   }
 };
 
-module.exports = { createMatch, getMatches, updateMatch, saveMatch, deleteMatch };
+const deleteExpiredMatchesWithEmptySlots = async () => {
+  try {
+    const now = new Date();
+    const matches = await Match.find({
+      $or: [
+        { player2: null },
+        { player3: null },
+        { player4: null },
+      ],
+    });
+
+    for (const match of matches) {
+      const matchDateTime = new Date(`${match.date.toISOString().split('T')[0]}T${match.time}`);
+      if (matchDateTime <= now) {
+        await Match.deleteOne({ _id: match._id });
+        console.log(`Partido eliminado automáticamente por huecos vacíos: ${match._id}`);
+      }
+    }
+  } catch (error) {
+    console.error('Error al eliminar partidos con huecos vacíos:', error);
+  }
+};
+
+module.exports = { createMatch, getMatches, updateMatch, saveMatch, deleteMatch, deleteExpiredMatchesWithEmptySlots };

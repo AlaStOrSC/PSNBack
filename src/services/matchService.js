@@ -387,20 +387,36 @@ const calculateScores = async (match, results, currentUserId) => {
 };
 
 const getJoinableMatches = async () => {
-  const matches = await Match.find({
-    $or: [
-      { player2: null },
-      { player3: null },
-      { player4: null },
-    ],
-  })
-    .populate('player1', 'username score profilePicture')
-    .populate('player2', 'username score profilePicture')
-    .populate('player3', 'username score profilePicture')
-    .populate('player4', 'username score profilePicture')
-    .sort({ date: -1 });
+  try {
+    const matches = await Match.find({
+      $or: [
+        { player2: null },
+        { player3: null },
+        { player4: null },
+      ],
+    })
+      .populate('player1', 'username score profilePicture')
+      .populate('player2', 'username score profilePicture')
+      .populate('player3', 'username score profilePicture')
+      .populate('player4', 'username score profilePicture')
+      .sort({ date: -1 });
 
-  return matches;
+    console.log('Joinable matches found:', matches.map(m => ({
+      _id: m._id,
+      player1: m.player1?._id?.toString(),
+      player2: m.player2?._id?.toString() || null,
+      player3: m.player3?._id?.toString() || null,
+      player4: m.player4?._id?.toString() || null,
+      date: m.date,
+      time: m.time,
+      city: m.city,
+    })));
+
+    return matches;
+  } catch (error) {
+    console.error('Error in getJoinableMatches:', error);
+    throw error;
+  }
 };
 
 module.exports = { createMatch, getMatches, updateMatch, saveMatch, deleteMatch, deleteExpiredMatchesWithEmptySlots, joinMatch, getJoinableMatches };

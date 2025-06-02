@@ -12,7 +12,7 @@ const notFoundHandler = require('./src/middlewares/notFoundHandler');
 const adminRoutes = require('./src/routes/adminRoutes');
 const productRoutes = require('./src/routes/productRoutes');
 const cron = require('node-cron');
-const { deleteExpiredMatchesWithEmptySlots } = require('./services/matchService');
+const { deleteExpiredMatchesWithEmptySlots } = require('./src/services/matchService');
 
 const app = express();
 

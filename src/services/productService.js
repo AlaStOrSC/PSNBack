@@ -1,124 +1,83 @@
-const Product = require('../models/Product');
-const User = require('../models/User');
-const cloudinary = require('../config/cloudinary');
+const productService = require('../services/productService');
+const mongoose = require('mongoose');
 
-const getProducts = async ({ page = 1, limit = 10, minRating, minPrice, maxPrice, category, sellerUsername }) => {
-  const query = {};
-
-  if (minPrice || maxPrice) {
-    query.price = {};
-    if (minPrice) query.price.$gte = parseFloat(minPrice);
-    if (maxPrice) query.price.$lte = parseFloat(maxPrice);
+const getProducts = async (req, res) => {
+  try {
+    const { page, limit, minRating, minPrice, maxPrice, category, sellerUsername, name } = req.query;
+    const result = await productService.getProducts({
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 10,
+      minRating: minRating ? parseFloat(minRating) : undefined,
+      minPrice: minPrice ? parseFloat(minPrice) : undefined,
+      maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+      category,
+      sellerUsername,
+      name,
+    });
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-  if (category) {
-    query.category = category;
-  }
+};
 
-  let sellerIds = [];
-  if (sellerUsername) {
-    const sellers = await User.find({
-      username: { $regex: sellerUsername, $options: 'i' },
-    }).select('_id');
-    sellerIds = sellers.map(seller => seller._id);
-    query.seller = { $in: sellerIds };
-  }
+const createProduct = async (req, res) => {
+  try {
+    const { name, price, description, category } = req.body;
+    const image = req.file;
+    const sellerId = req.user.userId;
 
-  if (minRating) {
-    const sellers = await User.find({
-      averageRating: { $gte: parseFloat(minRating) },
-    }).select('_id');
-    const ratingSellerIds = sellers.map(seller => seller._id);
-    if (sellerUsername) {
-      query.seller = { $in: sellerIds.filter(id => ratingSellerIds.includes(id)) };
-    } else {
-      query.seller = { $in: ratingSellerIds };
+    const product = await productService.createProduct({
+      name,
+      image,
+      price,
+      description,
+      category,
+      sellerId,
+    });
+
+    res.status(201).json({ message: 'Producto creado con éxito', product });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const purchaseProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const buyerId = req.user.userId;
+
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: 'ID de producto inválido' });
     }
+
+    const product = await productService.purchaseProduct(productId, buyerId);
+
+    res.status(200).json({ message: 'Compra iniciada con éxito', product });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  const products = await Product.find(query)
-    .populate('seller', 'username averageRating')
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .sort({ createdAt: -1 });
-
-  const total = await Product.countDocuments(query);
-
-  return {
-    products,
-    total,
-    totalPages: Math.ceil(total / limit),
-    currentPage: page,
-  };
 };
 
-const createProduct = async ({ name, image, price, description, category, sellerId }) => {
-  const uploadResponse = await new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { resource_type: 'image' },
-      (error, result) => {
-        if (error) reject(error);
-        else resolve(result);
-      }
-    );
-    stream.end(image.buffer);
-  });
+const rateProduct = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const userId = req.user.userId;
+    const { rating, comment } = req.body;
 
-  const product = new Product({
-    name,
-    image: uploadResponse.secure_url,
-    price,
-    description,
-    category,
-    seller: sellerId,
-  });
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: 'ID de producto inválido' });
+    }
 
-  await product.save();
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({ message: 'La valoración debe estar entre 1 y 5' });
+    }
 
-  await User.findByIdAndUpdate(sellerId, {
-    $push: { products: product._id },
-  });
+    const product = await productService.rateProduct(productId, userId, rating, comment);
 
-  return product;
-};
-
-const purchaseProduct = async (productId, buyerId) => {
-  const product = await Product.findById(productId);
-  if (!product) {
-    throw new Error('Producto no encontrado');
+    res.status(200).json({ message: 'Valoración añadida y producto eliminado con éxito', product });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  return product;
-};
-
-const rateProduct = async (productId, userId, rating, comment) => {
-  const product = await Product.findById(productId).populate('seller');
-  if (!product) {
-    throw new Error('Producto no encontrado');
-  }
-
-  const seller = await User.findById(product.seller._id);
-  seller.ratings.push({
-    user: userId,
-    rating,
-    comment,
-  });
-
-  if (seller.ratings.length > 0) {
-    const totalRating = seller.ratings.reduce((sum, r) => sum + r.rating, 0);
-    seller.averageRating = totalRating / seller.ratings.length;
-  } else {
-    seller.averageRating = 0;
-  }
-
-  await seller.save();
-
-  await Product.findByIdAndDelete(productId);
-
-  await User.findByIdAndUpdate(product.seller._id, {
-    $pull: { products: productId },
-  });
-
-  return product;
 };
 
 module.exports = {

@@ -6,7 +6,7 @@ const getProducts = async (req, res) => {
     const { page, limit, minRating, minPrice, maxPrice, category, sellerUsername, name } = req.query;
     const result = await productService.getProducts({
       page: parseInt(page) || 1,
-      limit: parseInt(limit) || 10,
+      limit: parseInt(limit) || 15,
       minRating: minRating ? parseFloat(minRating) : undefined,
       minPrice: minPrice ? parseFloat(minPrice) : undefined,
       maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,

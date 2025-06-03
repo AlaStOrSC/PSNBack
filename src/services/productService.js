@@ -2,7 +2,7 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const cloudinary = require('../config/cloudinary');
 
-const getProducts = async ({ page = 1, limit = 10, minRating, minPrice, maxPrice, category, sellerUsername, name }) => {
+const getProducts = async ({ page = 1, limit = 15, minRating, minPrice, maxPrice, category, sellerUsername, name }) => {
   const query = {};
 
   if (minPrice || maxPrice) {

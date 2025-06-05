@@ -69,4 +69,5 @@ router.get('/friends/requests/count', authMiddleware(), getPendingRequestsCount)
 router.post('/redeem-points', authMiddleware(), redeemPoints);
 
 
+
 module.exports = router;

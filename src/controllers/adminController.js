@@ -2,7 +2,7 @@ const adminService = require('../services/adminService');
 
 const updateUser = async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const userId = req.params.id;
     const updates = req.body;
     const currentUserId = req.user.userId;
 
@@ -19,7 +19,7 @@ const updateUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const userId = req.params.id;
     const currentUserId = req.user.userId;
 
     await adminService.deleteUser(userId, currentUserId);

@@ -27,7 +27,7 @@ const allowedOrigins = [
   'https://padel-social-frontend.onrender.com',
   'http://localhost:5173',
   'https://psn-frontend.vercel.app',
-  'https://psn-front.vercel.app/'
+  'https://psn-front.vercel.app'
 ];
 
 app.use(cors({
